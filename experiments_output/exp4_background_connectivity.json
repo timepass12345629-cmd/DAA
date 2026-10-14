@@ -1,0 +1,46 @@
+[
+  {
+    "experiment": "background_connectivity",
+    "p_external": 0.02,
+    "total_edges": 20,
+    "planted_size": 6,
+    "detected_size": 6,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "jaccard": 1.0
+  },
+  {
+    "experiment": "background_connectivity",
+    "p_external": 0.08,
+    "total_edges": 29,
+    "planted_size": 6,
+    "detected_size": 6,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "jaccard": 1.0
+  },
+  {
+    "experiment": "background_connectivity",
+    "p_external": 0.15,
+    "total_edges": 45,
+    "planted_size": 6,
+    "detected_size": 8,
+    "precision": 0.75,
+    "recall": 1.0,
+    "f1": 0.8571,
+    "jaccard": 0.75
+  },
+  {
+    "experiment": "background_connectivity",
+    "p_external": 0.25,
+    "total_edges": 69,
+    "planted_size": 6,
+    "detected_size": 21,
+    "precision": 0.2857,
+    "recall": 1.0,
+    "f1": 0.4444,
+    "jaccard": 0.2857
+  }
+]

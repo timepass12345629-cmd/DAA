@@ -1,0 +1,5 @@
+experiment,p_external,total_edges,planted_size,detected_size,precision,recall,f1,jaccard
+background_connectivity,0.02,20,6,6,1.0,1.0,1.0,1.0
+background_connectivity,0.08,29,6,6,1.0,1.0,1.0,1.0
+background_connectivity,0.15,45,6,8,0.75,1.0,0.8571,0.75
+background_connectivity,0.25,69,6,21,0.2857,1.0,0.4444,0.2857

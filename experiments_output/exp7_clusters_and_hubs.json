@@ -1,0 +1,12 @@
+[
+  {
+    "experiment": "multiple_clusters_and_hubs",
+    "description": "K5 cluster (density 2.0) vs C6+chords cluster (1.33) vs Star Hub (0.91)",
+    "goldberg_density": 2.0,
+    "goldberg_c1_f1": 1.0,
+    "greedy_density": 2.0,
+    "greedy_c1_f1": 1.0,
+    "greedy_plus_plus_density": 2.0,
+    "greedy_plus_plus_c1_f1": 1.0
+  }
+]

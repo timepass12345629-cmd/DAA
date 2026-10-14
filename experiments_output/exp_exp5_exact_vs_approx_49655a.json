@@ -1,0 +1,26 @@
+[
+  {
+    "experiment": "exact_vs_approx_density",
+    "num_nodes": 8,
+    "num_edges": 14,
+    "optimal_density": 1.85714,
+    "goldberg_density": 1.85714,
+    "goldberg_gap": 0.0,
+    "greedy_density": 1.85714,
+    "greedy_approx_ratio": 1.0,
+    "greedy_plus_plus_density": 1.85714,
+    "greedy_plus_plus_approx_ratio": 1.0
+  },
+  {
+    "experiment": "exact_vs_approx_density",
+    "num_nodes": 12,
+    "num_edges": 29,
+    "optimal_density": 2.41667,
+    "goldberg_density": 2.41667,
+    "goldberg_gap": 0.0,
+    "greedy_density": 2.41667,
+    "greedy_approx_ratio": 1.0,
+    "greedy_plus_plus_density": 2.41667,
+    "greedy_plus_plus_approx_ratio": 1.0
+  }
+]
