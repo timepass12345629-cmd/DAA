@@ -92,6 +92,7 @@ class StreamSession:
                     "external_degree_ratio",
                     cfg.get("hub_degree_ratio", 1.5),
                 ),
+                hub_trigger_type=cfg.get("hub_trigger_type", "global_degree"),
             )
         else:
             raise ValueError(f"Unknown stream mode '{mode}'")

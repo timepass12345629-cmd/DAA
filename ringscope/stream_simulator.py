@@ -428,11 +428,20 @@ class IncrementalHeuristicMaintainer(BaseStreamMaintainer):
         recompute_interval: int = 5,
         external_edge_threshold: int = 10,
         external_degree_ratio: float = 1.5,
+        hub_trigger_type: Literal["global_degree", "candidate_incident", "hybrid"] = "global_degree",
     ) -> None:
+        valid_triggers = ("global_degree", "candidate_incident", "hybrid")
+        if hub_trigger_type not in valid_triggers:
+            raise ValueError(
+                f"Invalid hub_trigger_type '{hub_trigger_type}'. "
+                f"Must be one of: {', '.join(valid_triggers)}"
+            )
+
         super().__init__(algorithm=algorithm, tolerance=tolerance)
         self.recompute_interval = recompute_interval
         self.external_edge_threshold = external_edge_threshold
         self.external_degree_ratio = external_degree_ratio
+        self.hub_trigger_type = hub_trigger_type
         self._external_edges_since_recompute = 0
 
     def process_batch(self, batch: StreamBatch) -> StreamStepSnapshot:
@@ -488,11 +497,24 @@ class IncrementalHeuristicMaintainer(BaseStreamMaintainer):
         # Check if external node degree spiked above threshold
         trigger_hub = False
         if self.current_density > 0:
-            thresh = max(3.0, self.external_degree_ratio * self.current_density)
-            for v in affected:
-                if v not in cand_set and self.graph.degree(v) > thresh:
-                    trigger_hub = True
-                    break
+            if self.hub_trigger_type in ("candidate_incident", "hybrid") and cand_set:
+                # Candidate-incident trigger: an external node connects to candidate members
+                # with incident degree > current_density (which mathematically strictly
+                # increases density of S_cand U {v})
+                for v in affected:
+                    if v not in cand_set and v in self.graph.graph:
+                        inc_deg = sum(1 for u in self.graph.graph.neighbors(v) if u in cand_set)
+                        if inc_deg > self.current_density:
+                            trigger_hub = True
+                            break
+
+            if not trigger_hub and self.hub_trigger_type in ("global_degree", "hybrid"):
+                # Global degree trigger: an external node's total degree in G exceeds threshold
+                thresh = max(3.0, self.external_degree_ratio * self.current_density)
+                for v in affected:
+                    if v not in cand_set and self.graph.degree(v) > thresh:
+                        trigger_hub = True
+                        break
 
         should_recompute = trigger_periodic or trigger_external or trigger_empty or trigger_hub
 
