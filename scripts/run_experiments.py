@@ -39,9 +39,7 @@ from ringscope.experiments import (
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="RingScope — Research Experiment Runner"
-    )
+    parser = argparse.ArgumentParser(description="RingScope — Research Experiment Runner")
     parser.add_argument(
         "--experiments",
         type=str,
@@ -76,10 +74,12 @@ def main() -> None:
         export_results_to_csv(res_runtime, out_dir / "exp1_runtime_vs_size.csv")
         print(f"      Completed in {(time.perf_counter() - t0):.2f}s. Sample:")
         for r in res_runtime:
-            print(f"      - N={r['num_nodes']:2d}, M={r['num_edges']:2d} | "
-                  f"Greedy: {r['greedy_peeling_ms']:.2f}ms | "
-                  f"Greedy++: {r['greedy_plus_plus_ms']:.2f}ms | "
-                  f"Goldberg: {r['goldberg_ms']}ms")
+            print(
+                f"      - N={r['num_nodes']:2d}, M={r['num_edges']:2d} | "
+                f"Greedy: {r['greedy_peeling_ms']:.2f}ms | "
+                f"Greedy++: {r['greedy_plus_plus_ms']:.2f}ms | "
+                f"Goldberg: {r['goldberg_ms']}ms"
+            )
 
     # 2. Cluster Size vs Recovery
     if run_all or "cluster_size" in exp_choice:
@@ -90,10 +90,12 @@ def main() -> None:
         export_results_to_csv(res_csize, out_dir / "exp2_cluster_size_recovery.csv")
         print(f"      Completed in {(time.perf_counter() - t0):.2f}s. Sample:")
         for r in res_csize:
-            print(f"      - Size k={r['cluster_size']:2d} | "
-                  f"Greedy F1={r['greedy_f1']:.3f} | "
-                  f"Greedy++ F1={r['greedy_plus_plus_f1']:.3f} | "
-                  f"Goldberg F1={r['goldberg_f1']:.3f}")
+            print(
+                f"      - Size k={r['cluster_size']:2d} | "
+                f"Greedy F1={r['greedy_f1']:.3f} | "
+                f"Greedy++ F1={r['greedy_plus_plus_f1']:.3f} | "
+                f"Goldberg F1={r['goldberg_f1']:.3f}"
+            )
 
     # 3. Cluster Sparsity vs Recovery
     if run_all or "sparsity" in exp_choice:
@@ -122,11 +124,13 @@ def main() -> None:
         export_results_to_csv(res_exact, out_dir / "exp5_exact_vs_approx.csv")
         print(f"      Completed in {(time.perf_counter() - t0):.2f}s. Sample:")
         for r in res_exact:
-            print(f"      - N={r['num_nodes']:2d} | OPT={r['optimal_density']:.4f} | "
-                  f"Goldberg={r['goldberg_density']:.4f} | "
-                  f"Greedy={r['greedy_density']:.4f} ({r['greedy_approx_ratio']:.3f}) | "
-                  f"Greedy++={r['greedy_plus_plus_density']:.4f} "
-                  f"({r['greedy_plus_plus_approx_ratio']:.3f})")
+            print(
+                f"      - N={r['num_nodes']:2d} | OPT={r['optimal_density']:.4f} | "
+                f"Goldberg={r['goldberg_density']:.4f} | "
+                f"Greedy={r['greedy_density']:.4f} ({r['greedy_approx_ratio']:.3f}) | "
+                f"Greedy++={r['greedy_plus_plus_density']:.4f} "
+                f"({r['greedy_plus_plus_approx_ratio']:.3f})"
+            )
 
     # 6. Streaming Modes Comparison (Modes A, B, C)
     if run_all or "streaming" in exp_choice:
@@ -142,9 +146,11 @@ def main() -> None:
         export_results_to_csv(res_stream, out_dir / "exp6_streaming_modes.csv")
         print(f"      Completed in {(time.perf_counter() - t0):.2f}s. Summary:")
         for r in res_stream:
-            print(f"      - {r['mode']:28s} | Latency: {r['total_runtime_ms']:.2f}ms | "
-                  f"Recomps: {r['total_recomputations']:2d}/{r['total_batches']:2d} | "
-                  f"Density: {r['final_density']:.4f} | F1: {r['f1']:.3f}")
+            print(
+                f"      - {r['mode']:28s} | Latency: {r['total_runtime_ms']:.2f}ms | "
+                f"Recomps: {r['total_recomputations']:2d}/{r['total_batches']:2d} | "
+                f"Density: {r['final_density']:.4f} | F1: {r['f1']:.3f}"
+            )
 
     # 7. Multiple Clusters and High-Degree Hubs
     if run_all or "hubs" in exp_choice:

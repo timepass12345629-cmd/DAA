@@ -1,0 +1,2 @@
+experiment,description,goldberg_density,goldberg_c1_f1,greedy_density,greedy_c1_f1,greedy_plus_plus_density,greedy_plus_plus_c1_f1
+multiple_clusters_and_hubs,K5 cluster (density 2.0) vs C6+chords cluster (1.33) vs Star Hub (0.91),2.0,1.0,2.0,1.0,2.0,1.0

@@ -75,9 +75,7 @@ def calculate_overlap_metrics(
     }
 
 
-def calculate_density_gap(
-    candidate_density: float, exact_density: float
-) -> dict[str, float]:
+def calculate_density_gap(candidate_density: float, exact_density: float) -> dict[str, float]:
     """Calculate absolute and relative density gap against an exact reference."""
     abs_gap = max(0.0, exact_density - candidate_density)
     ratio = (candidate_density / exact_density) if exact_density > 1e-9 else 1.0
@@ -142,9 +140,7 @@ class StreamingModeComparisonResult:
                 if self.exact_reference_density is not None
                 else None
             ),
-            "density_gap": (
-                round(self.density_gap, 5) if self.density_gap is not None else None
-            ),
+            "density_gap": (round(self.density_gap, 5) if self.density_gap is not None else None),
             "approx_ratio": (
                 round(self.approx_ratio, 4) if self.approx_ratio is not None else None
             ),
@@ -217,9 +213,7 @@ def evaluate_streaming_modes(
                 approx_rat = gap_info["approximation_ratio"]
 
         # Recovery metrics against planted ground truth
-        overlap_info = calculate_overlap_metrics(
-            maintainer.current_candidate, planted_cluster
-        )
+        overlap_info = calculate_overlap_metrics(maintainer.current_candidate, planted_cluster)
 
         lat_pct = calculate_latency_percentiles(batch_latencies)
         num_batches_processed = len(maintainer.history)
@@ -267,9 +261,7 @@ def _normalize_to_dict(item: Any) -> dict[str, Any]:
     return dict(item)
 
 
-def export_results_to_json(
-    results: list[Any], filepath: Union[str, Path]
-) -> None:
+def export_results_to_json(results: list[Any], filepath: Union[str, Path]) -> None:
     """Export benchmark result dataclasses or dicts to formatted JSON."""
     p = Path(filepath)
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -278,9 +270,7 @@ def export_results_to_json(
         json.dump(dict_list, f, indent=2)
 
 
-def export_results_to_csv(
-    results: list[Any], filepath: Union[str, Path]
-) -> None:
+def export_results_to_csv(results: list[Any], filepath: Union[str, Path]) -> None:
     """Export benchmark result dataclasses or dicts to CSV."""
     p = Path(filepath)
     p.parent.mkdir(parents=True, exist_ok=True)

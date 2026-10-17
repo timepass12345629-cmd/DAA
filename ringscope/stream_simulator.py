@@ -357,8 +357,13 @@ class WarmStartedMaintainer(BaseStreamMaintainer):
                 # Decision test: does ANY subset S achieve density > prior_density?
                 dec = goldberg_decision_threshold(self.graph, prior_density)
                 if dec.has_denser_subgraph and dec.candidate_nodes:
-                    # Run warm-started binary search
-                    res_gb = goldberg_densest_subgraph(self.graph, tolerance=self.tolerance)
+                    # Run genuine warm-started binary search reusing prior density
+                    # as valid lower bound
+                    res_gb = goldberg_densest_subgraph(
+                        self.graph,
+                        tolerance=self.tolerance,
+                        lower_bound=prior_density,
+                    )
                     self.current_candidate = res_gb.nodes
                     self.current_density = res_gb.density
                     self.recomputation_count += 1
@@ -407,10 +412,10 @@ class IncrementalHeuristicMaintainer(BaseStreamMaintainer):
     external clusters can also become denser.
     Therefore, explicit configurable triggers govern full recomputation:
     - recompute_interval: periodic safety check every K batches.
-    - external_edge_threshold: triggers recomputation when M_ext edges have been
+    - external_edge_threshold: triggers recomputation when M_ext unique edges have been
       added strictly outside S_cand since the last recomputation.
     - external_degree_ratio: triggers recomputation when an external vertex's
-      degree exceeds alpha * d(S_cand).
+      degree exceeds max(3, alpha * d(S_cand)).
 
     Disclaimer: This is an empirical heuristic that achieves sub-millisecond batch
     latencies; it is not guaranteed to maintain the exact optimum at all steps.
@@ -434,6 +439,30 @@ class IncrementalHeuristicMaintainer(BaseStreamMaintainer):
         t0 = time.perf_counter()
         initial_edges = self.graph.num_unique_edges
         affected: set[str] = set()
+        cand_set = set(self.current_candidate)
+
+        # Pre-classify new unique edges to avoid counting parallel transactions
+        # as new external edges
+        unique_batch_pairs: set[tuple[str, str]] = set()
+        for tx in batch.transactions:
+            su, sv = str(tx.src), str(tx.dst)
+            if su != sv:
+                pair = (su, sv) if su < sv else (sv, su)
+                unique_batch_pairs.add(pair)
+
+        internal_unique_additions = 0
+        external_unique_additions = 0
+        boundary_unique_additions = 0
+        for u, v in unique_batch_pairs:
+            if not self.graph.has_edge(u, v):
+                u_in = u in cand_set
+                v_in = v in cand_set
+                if u_in and v_in:
+                    internal_unique_additions += 1
+                elif not u_in and not v_in:
+                    external_unique_additions += 1
+                else:
+                    boundary_unique_additions += 1
 
         for tx in batch.transactions:
             affected.add(tx.src)
@@ -448,31 +477,19 @@ class IncrementalHeuristicMaintainer(BaseStreamMaintainer):
 
         new_unique = self.graph.num_unique_edges - initial_edges
         self.version += 1
-        cand_set = set(self.current_candidate)
 
-        # Count edges added outside candidate
-        edges_outside = 0
-        internal_edges = 0
-        for tx in batch.transactions:
-            u_in = tx.src in cand_set
-            v_in = tx.dst in cand_set
-            if u_in and v_in:
-                internal_edges += 1
-            elif not u_in and not v_in:
-                edges_outside += 1
-
-        self._external_edges_since_recompute += edges_outside
+        self._external_edges_since_recompute += external_unique_additions
 
         # Check explicit trigger conditions
-        trigger_periodic = (batch.batch_index % self.recompute_interval == 0)
-        trigger_external = (self._external_edges_since_recompute >= self.external_edge_threshold)
-        trigger_empty = (not self.current_candidate or self.current_density <= 1e-9)
+        trigger_periodic = batch.batch_index % self.recompute_interval == 0
+        trigger_external = self._external_edges_since_recompute >= self.external_edge_threshold
+        trigger_empty = not self.current_candidate or self.current_density <= 1e-9
 
-        # Check if external node degree spiked
+        # Check if external node degree spiked above threshold
         trigger_hub = False
         if self.current_density > 0:
+            thresh = max(3.0, self.external_degree_ratio * self.current_density)
             for v in affected:
-                thresh = self.external_degree_ratio * self.current_density
                 if v not in cand_set and self.graph.degree(v) > thresh:
                     trigger_hub = True
                     break
@@ -486,7 +503,8 @@ class IncrementalHeuristicMaintainer(BaseStreamMaintainer):
             recomputed = True
         else:
             # Incremental update: update density of current candidate
-            if internal_edges > 0 and cand_set:
+            # if internal unique edges were added
+            if internal_unique_additions > 0 and cand_set:
                 self.current_density = self.graph.density(cand_set)
             recomputed = False
 

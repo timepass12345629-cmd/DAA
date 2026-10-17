@@ -27,8 +27,12 @@ The present disclosure relates generally to data processing systems, graph analy
 - **H04L 9/40**: Network security; Traffic monitoring and anomaly detection.
 
 ### 3. Inventors & Technical Contributors
-- **Principal Software Architecture & Algorithms**: Autonomous Engineering Agent (DeepMind Antigravity IDE) & Project Research Team.
-- **Engineering Contributor**: System Author & Workspace Maintainer.
+> [!IMPORTANT]
+> **Inventorship Governance Notice**:
+> Under Section 6 and Section 2(1)(s) of the Indian Patents Act, 1970, inventorship is limited to natural persons who contributed to the conception of the claimed invention. AI systems and automated engineering agents cannot be named as inventors.
+> Actual human contributors must be designated by the applicant organization based on the project Human-Contribution Review Checklist (see `docs/patent-research/inventor_contributions.md`).
+- **Research & System Architecture Contributors**: Designated natural human inventors (to be finalized per corporate patent review).
+- **Engineering Contributor**: System Maintainer & Workspace Author.
 
 ---
 

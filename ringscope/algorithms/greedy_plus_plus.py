@@ -32,11 +32,14 @@ framework inspired by the Multiplicative Weights Update (MWU) method:
 Theoretical Guarantees:
 -----------------------
 - When T = 1: Identical to Charikar's 1/2-approximation algorithm.
-- For general T: Provably achieves a (1 - eps)-approximation in:
-      T = O((Delta / lambda*) * (log n / eps^2)) iterations,
-  where Delta is the maximum degree and lambda* is the optimum density.
-- Eliminates expensive max-flow or LP computations while achieving near-exact
-  or exact solutions in empirical evaluation.
+- For general T: Provably achieves a (1 - eps)-approximation when:
+      T = Omega((Delta / lambda*) * (log n / eps^2)) iterations,
+  where Delta is the maximum degree and lambda* is the optimum density
+  (Boob et al., WWW 2020 / KDD 2020).
+- Important Scope Distinction: A fixed number of passes (such as default T=10)
+  is an empirical heuristic. While it achieves near-exact or exact densities
+  in empirical benchmarks, it does not universally guarantee a (1 - eps)
+  approximation without scaling T according to the theoretical condition.
 """
 
 from __future__ import annotations
@@ -180,9 +183,7 @@ def greedy_plus_plus(
 
         # Priority metric: deg_H(v) + load(v)
         # Maintained using a lazy min-heap
-        heap: list[tuple[float, str]] = [
-            (current_deg[u] + load[u], u) for u in nodes
-        ]
+        heap: list[tuple[float, str]] = [(current_deg[u] + load[u], u) for u in nodes]
         heapq.heapify(heap)
 
         while len(alive) > 1:

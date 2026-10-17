@@ -96,11 +96,11 @@ def import_csv_edgelist(
         tg = TransactionGraph(name=graph_name, directed=directed)
 
         # Auto-detect or use explicit amount and timestamp columns
-        eff_amount_col = amount_col if amount_col else (
-            "amount" if "amount" in fieldnames else None
+        eff_amount_col = (
+            amount_col if amount_col else ("amount" if "amount" in fieldnames else None)
         )
-        eff_timestamp_col = timestamp_col if timestamp_col else (
-            "timestamp" if "timestamp" in fieldnames else None
+        eff_timestamp_col = (
+            timestamp_col if timestamp_col else ("timestamp" if "timestamp" in fieldnames else None)
         )
 
         reserved_cols = {source_col, target_col}

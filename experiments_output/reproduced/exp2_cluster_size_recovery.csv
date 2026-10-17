@@ -1,0 +1,5 @@
+experiment,cluster_size,planted_nodes_count,greedy_f1,greedy_jaccard,greedy_density,greedy_plus_plus_f1,greedy_plus_plus_jaccard,greedy_plus_plus_density,goldberg_f1,goldberg_jaccard,goldberg_density
+cluster_size_vs_recovery,4,4,0.4,0.25,1.5625,0.4,0.25,1.5625,0.4,0.25,1.5625
+cluster_size_vs_recovery,6,6,0.8,0.6667,2.3333,0.8,0.6667,2.3333,0.8,0.6667,2.3333
+cluster_size_vs_recovery,8,8,1.0,1.0,3.0,1.0,1.0,3.0,0.9412,0.8889,3.0
+cluster_size_vs_recovery,10,10,1.0,1.0,3.7,1.0,1.0,3.7,1.0,1.0,3.7

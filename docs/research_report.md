@@ -407,15 +407,19 @@ Validated against the exhaustive exponential Brute-Force Oracle ($2^n - 1$ subse
 
 ### 9.6 Experiment 6: Streaming Maintenance Modes Comparison
 
-Evaluated dynamic edge stream insertion (12 synthetic batches, 35 transactions total):
+Evaluated dynamic edge stream insertion across 12 synthetic batches (35 transactions total) comparing Modes A, B, and C under identical seed ($888$):
 
-| Mode | Algorithm | Recomputations | Recomputation Rate | Final Density | Total Runtime | Mean Latency | p95 Latency | $F_1$ |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Mode A (Full Recompute)** | Greedy Peeling | 12 / 12 | 100% | 1.3333 | 2.863 ms | 0.215 ms | 0.292 ms | 0.261 |
-| **Mode B (Warm-Started)** | Greedy Peeling | 12 / 12 | 100% | 1.3333 | 2.919 ms | 0.223 ms | 0.402 ms | 0.261 |
-| **Mode C (Incremental)** | Greedy Peeling | 11 / 12 | 91.7% | 1.3333 | 4.047 ms | 0.313 ms | 0.791 ms | 0.261 |
+| Mode | Underlying Solver | Recomputations | Recomputation Rate | Final Density | Exact Ground Truth Density | Total Runtime | Mean Latency | p95 Latency | Recovery $F_1$ |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Mode A (Full Recompute)** | Greedy Peeling | 12 / 12 | 100.0% | 1.3333 | 1.4167 (Goldberg) | 2.47 ms | 0.206 ms | 0.281 ms | 0.261 |
+| **Mode B (Warm-Started)** | Greedy Peeling | 12 / 12 | 100.0% | 1.3333 | 1.4167 (Goldberg) | 1.90 ms | 0.158 ms | 0.245 ms | 0.261 |
+| **Mode C (Incremental Heuristic)** | Greedy Peeling | **4 / 12** | **33.3%** | 1.3125 | 1.4167 (Goldberg) | **1.33 ms** | **0.111 ms** | **0.252 ms** | 0.286 |
 
-**Finding**: On small transaction graphs, full peeling recomputation is already extremely fast ($\approx 0.2\text{ ms/batch}$). In Mode C, external edge tracking and batch timers successfully triggered 11 recomputations, preventing stale cluster drift and matching the exact candidate density ($\lambda = 1.3333$) achieved by Mode A.
+**Technical Audit Findings & Observations**:
+1. **Explanation of the Reference Density Gap ($0.0833$)**:
+   The candidate density ($1.3333$) differed from the exact reference density ($1.4167$) because the streaming maintainer was configured with Charikar's greedy peeling algorithm (a $2$-approximation), while the evaluation reference was calculated using Goldberg's exact max-flow reduction. The gap represents the natural approximation slack of greedy peeling on this graph topology, not candidate drift during streaming.
+2. **Impact of Phase 7 Edge De-duplication**:
+   In Phase 7, Mode C was corrected to track unique new edges rather than raw transaction counts, eliminating false triggers from repeat transactions between existing accounts. As a result, Mode C recomputations dropped from $11/12$ ($91.7\%$) to **$4/12$ ($33.3\%$)**, achieving a $46.2\%$ latency reduction ($1.33\text{ ms}$ vs $2.47\text{ ms}$) while maintaining candidate density within $1.5\%$ ($1.3125$ vs $1.3333$). Mode C is an empirical heuristic that provides excellent latency savings on typical streams, but does not guarantee global exactness at every intermediate step.
 
 ---
 

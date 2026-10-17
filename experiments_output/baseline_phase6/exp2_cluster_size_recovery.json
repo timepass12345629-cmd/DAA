@@ -1,0 +1,58 @@
+[
+  {
+    "experiment": "cluster_size_vs_recovery",
+    "cluster_size": 4,
+    "planted_nodes_count": 4,
+    "greedy_f1": 0.4,
+    "greedy_jaccard": 0.25,
+    "greedy_density": 1.5625,
+    "greedy_plus_plus_f1": 0.4,
+    "greedy_plus_plus_jaccard": 0.25,
+    "greedy_plus_plus_density": 1.5625,
+    "goldberg_f1": 0.4,
+    "goldberg_jaccard": 0.25,
+    "goldberg_density": 1.5625
+  },
+  {
+    "experiment": "cluster_size_vs_recovery",
+    "cluster_size": 6,
+    "planted_nodes_count": 6,
+    "greedy_f1": 0.8,
+    "greedy_jaccard": 0.6667,
+    "greedy_density": 2.3333,
+    "greedy_plus_plus_f1": 0.8,
+    "greedy_plus_plus_jaccard": 0.6667,
+    "greedy_plus_plus_density": 2.3333,
+    "goldberg_f1": 0.8,
+    "goldberg_jaccard": 0.6667,
+    "goldberg_density": 2.3333
+  },
+  {
+    "experiment": "cluster_size_vs_recovery",
+    "cluster_size": 8,
+    "planted_nodes_count": 8,
+    "greedy_f1": 1.0,
+    "greedy_jaccard": 1.0,
+    "greedy_density": 3.0,
+    "greedy_plus_plus_f1": 1.0,
+    "greedy_plus_plus_jaccard": 1.0,
+    "greedy_plus_plus_density": 3.0,
+    "goldberg_f1": 0.9412,
+    "goldberg_jaccard": 0.8889,
+    "goldberg_density": 3.0
+  },
+  {
+    "experiment": "cluster_size_vs_recovery",
+    "cluster_size": 10,
+    "planted_nodes_count": 10,
+    "greedy_f1": 1.0,
+    "greedy_jaccard": 1.0,
+    "greedy_density": 3.7,
+    "greedy_plus_plus_f1": 1.0,
+    "greedy_plus_plus_jaccard": 1.0,
+    "greedy_plus_plus_density": 3.7,
+    "goldberg_f1": 1.0,
+    "goldberg_jaccard": 1.0,
+    "goldberg_density": 3.7
+  }
+]

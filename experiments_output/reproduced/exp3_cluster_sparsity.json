@@ -1,0 +1,42 @@
+[
+  {
+    "experiment": "cluster_sparsity_vs_recovery",
+    "p_internal": 0.4,
+    "cluster_size": 6,
+    "cluster_density": 0.5,
+    "background_density": 0.4211,
+    "recovery_f1": 0.5882,
+    "recovery_jaccard": 0.4167,
+    "detected_density": 1.0909
+  },
+  {
+    "experiment": "cluster_sparsity_vs_recovery",
+    "p_internal": 0.6,
+    "cluster_size": 6,
+    "cluster_density": 1.1667,
+    "background_density": 0.4211,
+    "recovery_f1": 0.7692,
+    "recovery_jaccard": 0.625,
+    "detected_density": 1.4286
+  },
+  {
+    "experiment": "cluster_sparsity_vs_recovery",
+    "p_internal": 0.8,
+    "cluster_size": 6,
+    "cluster_density": 1.6667,
+    "background_density": 0.4211,
+    "recovery_f1": 0.8571,
+    "recovery_jaccard": 0.75,
+    "detected_density": 1.75
+  },
+  {
+    "experiment": "cluster_sparsity_vs_recovery",
+    "p_internal": 1.0,
+    "cluster_size": 6,
+    "cluster_density": 2.5,
+    "background_density": 0.4211,
+    "recovery_f1": 1.0,
+    "recovery_jaccard": 1.0,
+    "detected_density": 2.5
+  }
+]

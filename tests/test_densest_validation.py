@@ -86,7 +86,7 @@ def test_oracle_validation_path_graphs():
     for n in (2, 4, 6):
         tg = TransactionGraph(name=f"Path_{n}")
         for i in range(n - 1):
-            tg.add_transaction(f"v_{i}", f"v_{i+1}")
+            tg.add_transaction(f"v_{i}", f"v_{i + 1}")
         _check_algorithms_against_oracle(tg)
 
 

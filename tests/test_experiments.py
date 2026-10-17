@@ -39,9 +39,7 @@ def test_exp_cluster_sparsity_vs_recovery():
 
 
 def test_exp_background_connectivity():
-    records = run_exp_background_connectivity(
-        n_total=16, cluster_size=4, p_out_values=(0.05, 0.2)
-    )
+    records = run_exp_background_connectivity(n_total=16, cluster_size=4, p_out_values=(0.05, 0.2))
     assert len(records) == 2
     for r in records:
         assert 0.0 <= r["f1"] <= 1.0

@@ -131,45 +131,35 @@ class GoldbergDensestResult:
 def _extract_graph_components(
     graph: Union[TransactionGraph, nx.Graph, nx.DiGraph],
 ) -> tuple[list[str], list[tuple[str, str]]]:
-    """Extract list of vertices and unique undirected edges from graph."""
+    """Extract list of unique vertices and unique undirected edges from graph."""
     if isinstance(graph, TransactionGraph):
-        nodes = [str(n) for n in graph.graph.nodes()]
-        # Extract unique undirected edges
-        edges = [(str(u), str(v)) for u, v in graph.graph.edges()]
+        raw_graph = graph.graph
     elif isinstance(graph, (nx.Graph, nx.DiGraph)):
-        nodes = [str(n) for n in graph.nodes()]
-        if graph.is_directed():
-            # Treat as undirected simple edges
-            seen = set()
-            edges = []
-            for u, v in graph.edges():
-                su, sv = str(u), str(v)
-                if su == sv:
-                    continue
-                pair = tuple(sorted([su, sv]))
-                if pair not in seen:
-                    seen.add(pair)
-                    edges.append(pair)
-        else:
-            edges = [
-                (str(u), str(v)) for u, v in graph.edges() if str(u) != str(v)
-            ]
+        raw_graph = graph
     else:
         raise TypeError(f"Unsupported graph type: {type(graph)}")
+
+    nodes = [str(n) for n in raw_graph.nodes()]
+    seen_edges: set[tuple[str, str]] = set()
+    edges: list[tuple[str, str]] = []
+    for u, v in raw_graph.edges():
+        su, sv = str(u), str(v)
+        if su == sv:
+            continue
+        pair = (su, sv) if su < sv else (sv, su)
+        if pair not in seen_edges:
+            seen_edges.add(pair)
+            edges.append(pair)
 
     return nodes, edges
 
 
-def _compute_undirected_density(
-    edges: Sequence[tuple[str, str]], nodes_subset: set[str]
-) -> float:
+def _compute_undirected_density(edges: Sequence[tuple[str, str]], nodes_subset: set[str]) -> float:
     """Compute undirected density |E(S)| / |S|."""
     k = len(nodes_subset)
     if k == 0:
         return 0.0
-    internal_edges = sum(
-        1 for u, v in edges if u in nodes_subset and v in nodes_subset
-    )
+    internal_edges = sum(1 for u, v in edges if u in nodes_subset and v in nodes_subset)
     return internal_edges / k
 
 
@@ -215,28 +205,33 @@ def goldberg_decision_threshold(
     # Feasible cut cost <= m + g * n. INF strictly exceeds any feasible cut.
     inf_cap = float(2 * m + (n * n) + 10.0)
 
-    s = "__source__"
-    t = "__sink__"
+    # Use structured tuples as internal network keys to strictly prevent
+    # collisions with any user account identifiers (e.g. '__source__', '__sink__')
+    s = ("__src__",)
+    t = ("__snk__",)
 
     dinic = Dinic()
 
     # 1. Source to edge-nodes with capacity 1.0
     for idx, (u, v) in enumerate(edges):
-        e_node = f"__e_{idx}__"
+        e_node = ("__e__", idx)
+        u_node = ("__v__", u)
+        v_node = ("__v__", v)
         dinic.add_edge(s, e_node, 1.0)
         # Edge-node to endpoint vertex-nodes with INF capacity
-        dinic.add_edge(e_node, u, inf_cap)
-        dinic.add_edge(e_node, v, inf_cap)
+        dinic.add_edge(e_node, u_node, inf_cap)
+        dinic.add_edge(e_node, v_node, inf_cap)
 
     # 2. Vertex-nodes to sink with capacity g
     for v in nodes:
-        dinic.add_edge(v, t, float(g))
+        v_node = ("__v__", v)
+        dinic.add_edge(v_node, t, float(g))
 
     cut_val = dinic.max_flow(s, t)
     source_side = dinic.min_cut_source_side(s)
 
     # Candidate original vertices in source cut
-    candidate_vertices = [v for v in nodes if v in source_side]
+    candidate_vertices = [v for v in nodes if ("__v__", v) in source_side]
     candidate_set = set(candidate_vertices)
 
     # Cut strictly cheaper than m indicates existence of subset with density > g
@@ -258,6 +253,7 @@ def goldberg_densest_subgraph(
     graph: Union[TransactionGraph, nx.Graph, nx.DiGraph],
     tolerance: float = 1e-4,
     max_iter: Optional[int] = None,
+    lower_bound: Optional[float] = None,
 ) -> GoldbergDensestResult:
     """
     Binary search for densest subgraph using Goldberg's flow formulation.
@@ -270,6 +266,8 @@ def goldberg_densest_subgraph(
         Convergence stopping tolerance (epsilon). Default: 1e-4.
     max_iter : int | None
         Optional hard limit on binary search iterations.
+    lower_bound : float | None
+        Optional warm-started lower bound on the maximum density.
 
     Returns
     -------
@@ -307,8 +305,8 @@ def goldberg_densest_subgraph(
             is_mathematically_exact=True,
         )
 
-    # Lower bound: 0. Upper bound: (n - 1) / 2 for simple graph or m
-    lo = 0.0
+    # Lower bound: 0 (or warm-started bound). Upper bound: (n - 1) / 2 for simple graph or m
+    lo = max(0.0, float(lower_bound)) if lower_bound is not None else 0.0
     hi = float(min(m, (n - 1) / 2.0 if n > 1 else m))
     if hi <= lo:
         hi = float(m)
@@ -319,7 +317,6 @@ def goldberg_densest_subgraph(
     iteration = 0
 
     theoretical_exact_bound = 1.0 / (n * (n - 1)) if n > 1 else 1e-6
-    is_exact = tolerance <= theoretical_exact_bound
 
     while (hi - lo) > tolerance:
         if max_iter is not None and iteration >= max_iter:
@@ -334,7 +331,12 @@ def goldberg_densest_subgraph(
             lo = mid
             cand_set = set(dec.candidate_nodes)
             cand_density = _compute_undirected_density(edges, cand_set)
-            if cand_density > best_density:
+            # Tie-breaking: update if strictly denser, or if equal density
+            # and candidate is more compact
+            if (cand_density > best_density + 1e-12) or (
+                abs(cand_density - best_density) <= 1e-12
+                and len(dec.candidate_nodes) < len(best_nodes)
+            ):
                 best_density = cand_density
                 best_nodes = dec.candidate_nodes
         else:
@@ -343,6 +345,8 @@ def goldberg_densest_subgraph(
     elapsed = time.perf_counter() - start_time
     best_set = set(best_nodes)
     edge_count = sum(1 for u, v in edges if u in best_set and v in best_set)
+    converged_within_tolerance = (hi - lo) <= tolerance
+    is_exact = converged_within_tolerance and (tolerance <= theoretical_exact_bound)
 
     return GoldbergDensestResult(
         nodes=sorted(best_nodes),

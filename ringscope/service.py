@@ -116,9 +116,7 @@ class StreamSession:
             current_density=round(self.maintainer.current_density, 5),
         )
 
-    def process_custom_transactions(
-        self, txs: list[TransactionRecordIn]
-    ) -> StreamStepResponse:
+    def process_custom_transactions(self, txs: list[TransactionRecordIn]) -> StreamStepResponse:
         self.step_counter += 1
         self.total_transactions += len(txs)
         records = [
@@ -289,9 +287,7 @@ class BackendService:
         )
 
         nodes_list = sorted(list(tg.graph.nodes())) if include_elements else None
-        edges_list = [
-            (str(u), str(v)) for u, v in tg.graph.edges()
-        ] if include_elements else None
+        edges_list = [(str(u), str(v)) for u, v in tg.graph.edges()] if include_elements else None
 
         return GraphResponse(
             graph_id=graph_id,
@@ -618,12 +614,8 @@ class BackendService:
             raise ValueError(f"Stream '{stream_id}' is not active ({session.status})")
 
         if transactions:
-            return await asyncio.to_thread(
-                session.process_custom_transactions, transactions
-            )
-        return await asyncio.to_thread(
-            session.process_synthetic_batches, num_synthetic_batches
-        )
+            return await asyncio.to_thread(session.process_custom_transactions, transactions)
+        return await asyncio.to_thread(session.process_synthetic_batches, num_synthetic_batches)
 
     async def inject_ring_stream(
         self,
@@ -673,6 +665,7 @@ class BackendService:
 
         try:
             import os
+
             os.makedirs(self.output_dir, exist_ok=True)
 
             results_list: list[dict[str, Any]] = []

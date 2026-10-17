@@ -108,9 +108,11 @@ def greedy_charikar(
     ug: nx.Graph = graph.to_undirected()
 
     if weight_attr is not None:
+
         def degree_fn(g, n):
             return g.degree(n, weight=weight_attr)
     else:
+
         def degree_fn(g, n):
             return g.degree(n)
 
@@ -264,6 +266,7 @@ def densest_subgraph(
         return exact_goldberg(graph, **kwargs)
     if algorithm in ("greedy_peeling",):
         from ringscope.algorithms.greedy_peeling import greedy_peeling
+
         res = greedy_peeling(graph)
         return DenseSubgraph(
             nodes=res.nodes,
@@ -273,6 +276,7 @@ def densest_subgraph(
         )
     if algorithm in ("greedy++", "greedy_plus_plus"):
         from ringscope.algorithms.greedy_plus_plus import greedy_plus_plus
+
         res_gpp = greedy_plus_plus(graph, **kwargs)
         return DenseSubgraph(
             nodes=res_gpp.nodes,

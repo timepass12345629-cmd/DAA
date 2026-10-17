@@ -109,9 +109,7 @@ def _graph_stats(tg: TransactionGraph) -> dict:
         "name": tg.name,
         "num_nodes": tg.num_nodes,
         "num_edges": tg.num_edges,
-        "is_strongly_connected": (
-            nx.is_strongly_connected(g) if is_dir else nx.is_connected(g)
-        )
+        "is_strongly_connected": (nx.is_strongly_connected(g) if is_dir else nx.is_connected(g))
         if tg.num_nodes > 0
         else False,
         "num_weakly_connected_components": (

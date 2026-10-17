@@ -101,6 +101,10 @@ class TransactionGraph:
             raise KeyError(f"Vertex '{vertex}' does not exist in graph")
         return int(self._g.degree(vertex))
 
+    def has_edge(self, u: str, v: str) -> bool:
+        """Return True if an edge exists between u and v."""
+        return self._g.has_edge(str(u), str(v))
+
     def connected_components(self) -> list[set[str]]:
         """
         Return the connected components of the graph.
@@ -149,9 +153,7 @@ class TransactionGraph:
 
         missing = nodes_set - set(self._g.nodes)
         if missing:
-            raise ValueError(
-                f"Cannot compute density: vertices not in graph: {sorted(missing)}"
-            )
+            raise ValueError(f"Cannot compute density: vertices not in graph: {sorted(missing)}")
 
         # In undirected simple graph, subgraph edges are the unique internal edges
         subg = self._g.subgraph(nodes_set)

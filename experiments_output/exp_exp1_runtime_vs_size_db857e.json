@@ -1,0 +1,24 @@
+[
+  {
+    "experiment": "runtime_vs_graph_size",
+    "num_nodes": 8,
+    "num_edges": 3,
+    "greedy_peeling_ms": 0.111,
+    "greedy_peeling_density": 0.75,
+    "greedy_plus_plus_ms": 0.266,
+    "greedy_plus_plus_density": 0.75,
+    "goldberg_ms": 3.718,
+    "goldberg_density": 0.75
+  },
+  {
+    "experiment": "runtime_vs_graph_size",
+    "num_nodes": 12,
+    "num_edges": 10,
+    "greedy_peeling_ms": 0.176,
+    "greedy_peeling_density": 0.8889,
+    "greedy_plus_plus_ms": 0.433,
+    "greedy_plus_plus_density": 0.9,
+    "goldberg_ms": 13.273,
+    "goldberg_density": 0.9
+  }
+]

@@ -1,0 +1,5 @@
+experiment,p_internal,cluster_size,cluster_density,background_density,recovery_f1,recovery_jaccard,detected_density
+cluster_sparsity_vs_recovery,0.4,6,0.5,0.4211,0.5882,0.4167,1.0909
+cluster_sparsity_vs_recovery,0.6,6,1.1667,0.4211,0.7692,0.625,1.4286
+cluster_sparsity_vs_recovery,0.8,6,1.6667,0.4211,0.8571,0.75,1.75
+cluster_sparsity_vs_recovery,1.0,6,2.5,0.4211,1.0,1.0,2.5

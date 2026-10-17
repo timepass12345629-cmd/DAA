@@ -127,3 +127,122 @@ def test_snapshot_to_dict_fields():
         "recomputation_count",
     ):
         assert key in d
+
+
+def test_mode_c_repeated_transactions_do_not_increment_external_count():
+    """
+    Verify that parallel/duplicate transactions between existing nodes
+    do not trigger external edge threshold.
+    """
+    maintainer = IncrementalHeuristicMaintainer(
+        algorithm="greedy_peeling",
+        recompute_interval=100,  # disable periodic
+        external_edge_threshold=5,
+    )
+    # Batch 0: candidate
+    maintainer.process_batch(
+        StreamBatch(
+            batch_index=0,
+            transactions=[
+                TransactionRecord("C1", "C2", 10.0, 1.0, "T0"),
+                TransactionRecord("C2", "C3", 10.0, 2.0, "T1"),
+                TransactionRecord("C3", "C1", 10.0, 3.0, "T2"),
+            ],
+        )
+    )
+    # Batch 1: introduces one external edge
+    snap1 = maintainer.process_batch(
+        StreamBatch(
+            batch_index=1,
+            transactions=[TransactionRecord("X", "Y", 10.0, 4.0, "T3")],
+        )
+    )
+    assert snap1.recomputed_this_step is False
+    assert maintainer._external_edges_since_recompute == 1
+
+    # Batch 2: sends 10 duplicate transactions for edge (X, Y)
+    snap2 = maintainer.process_batch(
+        StreamBatch(
+            batch_index=2,
+            transactions=[
+                TransactionRecord("X", "Y", 10.0, float(5 + i), f"TD_{i}") for i in range(10)
+            ],
+        )
+    )
+    # Since (X, Y) was already an edge, no new unique edges were added
+    assert snap2.recomputed_this_step is False
+    assert snap2.num_new_unique_edges == 0
+    assert maintainer._external_edges_since_recompute == 1  # Still 1, NOT 11!
+
+
+def test_mode_c_internal_edge_addition_updates_density_locally():
+    """
+    Verify that adding an internal edge updates candidate density
+    without full recomputation.
+    """
+    maintainer = IncrementalHeuristicMaintainer(
+        algorithm="greedy_peeling",
+        recompute_interval=100,
+        external_edge_threshold=100,
+    )
+    # Batch 0: 4-cycle on C1, C2, C3, C4 -> density 4/4 = 1.0
+    maintainer.process_batch(
+        StreamBatch(
+            batch_index=0,
+            transactions=[
+                TransactionRecord("C1", "C2", 1.0, 1.0, "T1"),
+                TransactionRecord("C2", "C3", 1.0, 2.0, "T2"),
+                TransactionRecord("C3", "C4", 1.0, 3.0, "T3"),
+                TransactionRecord("C4", "C1", 1.0, 4.0, "T4"),
+            ],
+        )
+    )
+    initial_recomps = maintainer.recomputation_count
+
+    # Batch 1: Add chord (C1, C3) inside candidate -> density becomes 5/4 = 1.25
+    snap1 = maintainer.process_batch(
+        StreamBatch(
+            batch_index=1,
+            transactions=[TransactionRecord("C1", "C3", 1.0, 5.0, "T5")],
+        )
+    )
+    assert snap1.recomputed_this_step is False
+    assert maintainer.recomputation_count == initial_recomps
+    assert snap1.candidate_density == pytest.approx(1.25)
+
+
+def test_mode_c_disjoint_cluster_recovery_on_trigger():
+    """
+    Verify that an external disjoint cluster that becomes denser
+    is detected when trigger fires.
+    """
+    maintainer = IncrementalHeuristicMaintainer(
+        algorithm="goldberg",
+        recompute_interval=5,
+        external_edge_threshold=6,
+    )
+    # Initial: Triangle on A, B, C (density 1.0)
+    maintainer.process_batch(
+        StreamBatch(
+            batch_index=0,
+            transactions=[
+                TransactionRecord("A", "B", 1.0, 1.0, "T1"),
+                TransactionRecord("B", "C", 1.0, 2.0, "T2"),
+                TransactionRecord("C", "A", 1.0, 3.0, "T3"),
+            ],
+        )
+    )
+    assert maintainer.current_density == pytest.approx(1.0)
+
+    # Inject disjoint K4 on D1..D4 (density 1.5, 6 unique edges) in one batch
+    k4_txs = []
+    nodes = ["D1", "D2", "D3", "D4"]
+    for i in range(len(nodes)):
+        for j in range(i + 1, len(nodes)):
+            k4_txs.append(TransactionRecord(nodes[i], nodes[j], 1.0, 10.0, f"TK_{i}_{j}"))
+
+    snap_k4 = maintainer.process_batch(StreamBatch(batch_index=1, transactions=k4_txs))
+    # 6 new unique external edges >= external_edge_threshold (6) -> triggers recomputation
+    assert snap_k4.recomputed_this_step is True
+    assert snap_k4.candidate_density == pytest.approx(1.5)
+    assert set(snap_k4.candidate_nodes) == {"D1", "D2", "D3", "D4"}

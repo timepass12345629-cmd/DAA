@@ -1,0 +1,46 @@
+[
+  {
+    "experiment": "runtime_vs_graph_size",
+    "num_nodes": 10,
+    "num_edges": 7,
+    "greedy_peeling_ms": 0.146,
+    "greedy_peeling_density": 0.8571,
+    "greedy_plus_plus_ms": 0.337,
+    "greedy_plus_plus_density": 0.8571,
+    "goldberg_ms": 7.256,
+    "goldberg_density": 0.8571
+  },
+  {
+    "experiment": "runtime_vs_graph_size",
+    "num_nodes": 20,
+    "num_edges": 32,
+    "greedy_peeling_ms": 0.252,
+    "greedy_peeling_density": 1.7647,
+    "greedy_plus_plus_ms": 0.827,
+    "greedy_plus_plus_density": 1.7857,
+    "goldberg_ms": 26.967,
+    "goldberg_density": 1.7857
+  },
+  {
+    "experiment": "runtime_vs_graph_size",
+    "num_nodes": 40,
+    "num_edges": 130,
+    "greedy_peeling_ms": 0.569,
+    "greedy_peeling_density": 3.3243,
+    "greedy_plus_plus_ms": 2.745,
+    "greedy_plus_plus_density": 3.3243,
+    "goldberg_ms": 138.671,
+    "goldberg_density": 3.3243
+  },
+  {
+    "experiment": "runtime_vs_graph_size",
+    "num_nodes": 60,
+    "num_edges": 234,
+    "greedy_peeling_ms": 1.048,
+    "greedy_peeling_density": 3.9153,
+    "greedy_plus_plus_ms": 4.726,
+    "greedy_plus_plus_density": 3.9153,
+    "goldberg_ms": 282.288,
+    "goldberg_density": 3.9153
+  }
+]

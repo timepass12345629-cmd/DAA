@@ -74,17 +74,19 @@ def run_exp_runtime_vs_graph_size(
             t_gb = (time.perf_counter() - t0) * 1000.0
             gb_density = gb.density
 
-        records.append({
-            "experiment": "runtime_vs_graph_size",
-            "num_nodes": tg.num_vertices,
-            "num_edges": tg.num_unique_edges,
-            "greedy_peeling_ms": round(t_gp, 3),
-            "greedy_peeling_density": round(gp.density, 4),
-            "greedy_plus_plus_ms": round(t_gpp, 3),
-            "greedy_plus_plus_density": round(gpp.density, 4),
-            "goldberg_ms": round(t_gb, 3) if t_gb is not None else None,
-            "goldberg_density": round(gb_density, 4) if gb_density is not None else None,
-        })
+        records.append(
+            {
+                "experiment": "runtime_vs_graph_size",
+                "num_nodes": tg.num_vertices,
+                "num_edges": tg.num_unique_edges,
+                "greedy_peeling_ms": round(t_gp, 3),
+                "greedy_peeling_density": round(gp.density, 4),
+                "greedy_plus_plus_ms": round(t_gpp, 3),
+                "greedy_plus_plus_density": round(gpp.density, 4),
+                "goldberg_ms": round(t_gb, 3) if t_gb is not None else None,
+                "goldberg_density": round(gb_density, 4) if gb_density is not None else None,
+            }
+        )
 
     return records
 
@@ -118,20 +120,22 @@ def run_exp_cluster_size_vs_recovery(
         m_gpp = calculate_overlap_metrics(gpp.nodes, gt)
         m_gb = calculate_overlap_metrics(gb.nodes, gt)
 
-        records.append({
-            "experiment": "cluster_size_vs_recovery",
-            "cluster_size": k,
-            "planted_nodes_count": len(gt),
-            "greedy_f1": m_gp["f1"],
-            "greedy_jaccard": m_gp["jaccard"],
-            "greedy_density": round(gp.density, 4),
-            "greedy_plus_plus_f1": m_gpp["f1"],
-            "greedy_plus_plus_jaccard": m_gpp["jaccard"],
-            "greedy_plus_plus_density": round(gpp.density, 4),
-            "goldberg_f1": m_gb["f1"],
-            "goldberg_jaccard": m_gb["jaccard"],
-            "goldberg_density": round(gb.density, 4),
-        })
+        records.append(
+            {
+                "experiment": "cluster_size_vs_recovery",
+                "cluster_size": k,
+                "planted_nodes_count": len(gt),
+                "greedy_f1": m_gp["f1"],
+                "greedy_jaccard": m_gp["jaccard"],
+                "greedy_density": round(gp.density, 4),
+                "greedy_plus_plus_f1": m_gpp["f1"],
+                "greedy_plus_plus_jaccard": m_gpp["jaccard"],
+                "greedy_plus_plus_density": round(gpp.density, 4),
+                "goldberg_f1": m_gb["f1"],
+                "goldberg_jaccard": m_gb["jaccard"],
+                "goldberg_density": round(gb.density, 4),
+            }
+        )
 
     return records
 
@@ -160,16 +164,18 @@ def run_exp_cluster_sparsity_vs_recovery(
         gpp = greedy_plus_plus(tg, iterations=10)
         m_gpp = calculate_overlap_metrics(gpp.nodes, gt)
 
-        records.append({
-            "experiment": "cluster_sparsity_vs_recovery",
-            "p_internal": p_in,
-            "cluster_size": cluster_size,
-            "cluster_density": round(res.cluster_density, 4),
-            "background_density": round(res.background_density, 4),
-            "recovery_f1": m_gpp["f1"],
-            "recovery_jaccard": m_gpp["jaccard"],
-            "detected_density": round(gpp.density, 4),
-        })
+        records.append(
+            {
+                "experiment": "cluster_sparsity_vs_recovery",
+                "p_internal": p_in,
+                "cluster_size": cluster_size,
+                "cluster_density": round(res.cluster_density, 4),
+                "background_density": round(res.background_density, 4),
+                "recovery_f1": m_gpp["f1"],
+                "recovery_jaccard": m_gpp["jaccard"],
+                "detected_density": round(gpp.density, 4),
+            }
+        )
 
     return records
 
@@ -198,17 +204,19 @@ def run_exp_background_connectivity(
         gb = goldberg_densest_subgraph(tg, tolerance=1e-4)
         m_gb = calculate_overlap_metrics(gb.nodes, gt)
 
-        records.append({
-            "experiment": "background_connectivity",
-            "p_external": p_out,
-            "total_edges": tg.num_unique_edges,
-            "planted_size": len(gt),
-            "detected_size": len(gb.nodes),
-            "precision": m_gb["precision"],
-            "recall": m_gb["recall"],
-            "f1": m_gb["f1"],
-            "jaccard": m_gb["jaccard"],
-        })
+        records.append(
+            {
+                "experiment": "background_connectivity",
+                "p_external": p_out,
+                "total_edges": tg.num_unique_edges,
+                "planted_size": len(gt),
+                "detected_size": len(gb.nodes),
+                "precision": m_gb["precision"],
+                "recall": m_gb["recall"],
+                "f1": m_gb["f1"],
+                "jaccard": m_gb["jaccard"],
+            }
+        )
 
     return records
 
@@ -239,18 +247,22 @@ def run_exp_exact_vs_approx_density(
         gpp = greedy_plus_plus(tg, iterations=10)
 
         gpp_ratio = (gpp.density / bf.density) if bf.density > 0 else 1.0
-        records.append({
-            "experiment": "exact_vs_approx_density",
-            "num_nodes": tg.num_vertices,
-            "num_edges": tg.num_unique_edges,
-            "optimal_density": round(bf.density, 5),
-            "goldberg_density": round(gb.density, 5),
-            "goldberg_gap": round(bf.density - gb.density, 5),
-            "greedy_density": round(gp.density, 5),
-            "greedy_approx_ratio": round((gp.density / bf.density) if bf.density > 0 else 1.0, 4),
-            "greedy_plus_plus_density": round(gpp.density, 5),
-            "greedy_plus_plus_approx_ratio": round(gpp_ratio, 4),
-        })
+        records.append(
+            {
+                "experiment": "exact_vs_approx_density",
+                "num_nodes": tg.num_vertices,
+                "num_edges": tg.num_unique_edges,
+                "optimal_density": round(bf.density, 5),
+                "goldberg_density": round(gb.density, 5),
+                "goldberg_gap": round(bf.density - gb.density, 5),
+                "greedy_density": round(gp.density, 5),
+                "greedy_approx_ratio": round(
+                    (gp.density / bf.density) if bf.density > 0 else 1.0, 4
+                ),
+                "greedy_plus_plus_density": round(gpp.density, 5),
+                "greedy_plus_plus_approx_ratio": round(gpp_ratio, 4),
+            }
+        )
 
     return records
 
@@ -294,7 +306,7 @@ def run_exp_multiple_clusters_and_hubs(
 
     # Cluster 2: 6 nodes, ring + chords (density 8 / 6 = 1.33)
     for i in range(6):
-        tg.add_transaction(f"C2_{i}", f"C2_{(i+1)%6}")
+        tg.add_transaction(f"C2_{i}", f"C2_{(i + 1) % 6}")
     tg.add_transaction("C2_0", "C2_3")
     tg.add_transaction("C2_1", "C2_4")
 
@@ -315,13 +327,17 @@ def run_exp_multiple_clusters_and_hubs(
     m_gp = calculate_overlap_metrics(gp.nodes, c1_nodes)
     m_gpp = calculate_overlap_metrics(gpp.nodes, c1_nodes)
 
-    return [{
-        "experiment": "multiple_clusters_and_hubs",
-        "description": "K5 cluster (density 2.0) vs C6+chords cluster (1.33) vs Star Hub (0.91)",
-        "goldberg_density": round(gb.density, 4),
-        "goldberg_c1_f1": m_gb["f1"],
-        "greedy_density": round(gp.density, 4),
-        "greedy_c1_f1": m_gp["f1"],
-        "greedy_plus_plus_density": round(gpp.density, 4),
-        "greedy_plus_plus_c1_f1": m_gpp["f1"],
-    }]
+    return [
+        {
+            "experiment": "multiple_clusters_and_hubs",
+            "description": (
+                "K5 cluster (density 2.0) vs C6+chords cluster (1.33) vs Star Hub (0.91)"
+            ),
+            "goldberg_density": round(gb.density, 4),
+            "goldberg_c1_f1": m_gb["f1"],
+            "greedy_density": round(gp.density, 4),
+            "greedy_c1_f1": m_gp["f1"],
+            "greedy_plus_plus_density": round(gpp.density, 4),
+            "greedy_plus_plus_c1_f1": m_gpp["f1"],
+        }
+    ]

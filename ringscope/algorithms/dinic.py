@@ -130,9 +130,7 @@ class Dinic:
             res = edge.residual_capacity
 
             if levels[v] == levels[u] + 1 and res > 1e-11:
-                tr = self._dfs_blocking_flow(
-                    v, t_idx, min(pushed, res), levels, work
-                )
+                tr = self._dfs_blocking_flow(v, t_idx, min(pushed, res), levels, work)
                 if tr > 1e-11:
                     edge.flow += tr
                     self._adj[v][edge.rev].flow -= tr
@@ -171,9 +169,7 @@ class Dinic:
                 for i in range(n):
                     work[i] = 0
                 while True:
-                    pushed = self._dfs_blocking_flow(
-                        s_idx, t_idx, float("inf"), levels, work
-                    )
+                    pushed = self._dfs_blocking_flow(s_idx, t_idx, float("inf"), levels, work)
                     if pushed <= 1e-11:
                         break
                     total_flow += pushed

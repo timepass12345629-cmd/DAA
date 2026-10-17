@@ -98,3 +98,95 @@ def test_goldberg_densest_planted_dense_component():
     res = goldberg_densest_subgraph(tg, tolerance=1e-4)
     assert res.density == pytest.approx(1.5)
     assert set(res.nodes) == {"N0", "N1", "N2", "N3"}
+
+
+def test_goldberg_reserved_node_names_collision():
+    """
+    Verify that node names like '__source__', '__sink__', '__e_0__'
+    do not collide with internal network keys.
+    """
+    tg = TransactionGraph()
+    tg.add_transaction("__source__", "__sink__")
+    tg.add_transaction("__sink__", "__e_0__")
+    tg.add_transaction("__e_0__", "__source__")
+
+    dec = goldberg_decision_threshold(tg, g=0.5)
+    assert dec.has_denser_subgraph is True
+    assert set(dec.candidate_nodes) == {"__source__", "__sink__", "__e_0__"}
+    assert dec.candidate_density == pytest.approx(1.0)
+
+    res = goldberg_densest_subgraph(tg, tolerance=1e-4)
+    assert res.density == pytest.approx(1.0)
+    assert set(res.nodes) == {"__source__", "__sink__", "__e_0__"}
+
+
+def test_goldberg_self_loop_and_duplicate_edges():
+    """Verify that self-loops and duplicate edges in raw networkx graphs do not distort density."""
+    import networkx as nx
+
+    g = nx.Graph()
+    g.add_edge("A", "B")
+    g.add_edge("B", "C")
+    g.add_edge("C", "A")
+    g.add_edge("A", "A")  # Self loop
+
+    res = goldberg_densest_subgraph(g, tolerance=1e-4)
+    assert res.density == pytest.approx(1.0)
+    assert set(res.nodes) == {"A", "B", "C"}
+    assert res.edge_count == 3
+
+
+def test_goldberg_warm_started_lower_bound():
+    """Verify that lower_bound reduces flow computations while preserving the optimal density."""
+    tg = TransactionGraph()
+    for i in range(5):
+        for j in range(i + 1, 5):
+            tg.add_transaction(f"v_{i}", f"v_{j}")
+
+    # Standard run
+    res_cold = goldberg_densest_subgraph(tg, tolerance=1e-4)
+    # Warm-started run with lower_bound = 1.0
+    res_warm = goldberg_densest_subgraph(tg, tolerance=1e-4, lower_bound=1.0)
+
+    assert res_cold.density == pytest.approx(2.0)
+    assert res_warm.density == pytest.approx(2.0)
+    assert set(res_warm.nodes) == set(res_cold.nodes)
+    assert res_warm.flow_computations <= res_cold.flow_computations
+
+
+def test_goldberg_tie_breaking_compactness():
+    """Verify that tie-breaking prefers the smaller candidate subset when densities are equal."""
+    tg = TransactionGraph()
+    # K4 has density 6 / 4 = 1.5
+    for i in range(4):
+        for j in range(i + 1, 4):
+            tg.add_transaction(f"C_{i}", f"C_{j}")
+    # Isolated nodes with zero density
+    for i in range(10):
+        tg.add_account(f"ISO_{i}")
+
+    res = goldberg_densest_subgraph(tg, tolerance=1e-4)
+    assert res.density == pytest.approx(1.5)
+    assert len(res.nodes) == 4
+    assert set(res.nodes) == {"C_0", "C_1", "C_2", "C_3"}
+
+
+def test_goldberg_mathematical_exactness_flag():
+    """Verify is_mathematically_exact flag logic."""
+    tg = TransactionGraph()
+    for i in range(4):
+        for j in range(i + 1, 4):
+            tg.add_transaction(f"n_{i}", f"n_{j}")
+
+    # For n=4, theoretical bound = 1 / (4 * 3) = 1/12 ≈ 0.0833
+    # Tolerance 0.05 <= 0.0833 -> exact
+    res_exact = goldberg_densest_subgraph(tg, tolerance=0.05)
+    assert res_exact.is_mathematically_exact is True
+
+    # Tolerance 0.5 > 0.0833 -> not exact
+    res_approx = goldberg_densest_subgraph(tg, tolerance=0.5)
+    assert res_approx.is_mathematically_exact is False
+
+    # Hard max_iter stop -> not exact
+    res_stopped = goldberg_densest_subgraph(tg, tolerance=0.01, max_iter=1)
+    assert res_stopped.is_mathematically_exact is False

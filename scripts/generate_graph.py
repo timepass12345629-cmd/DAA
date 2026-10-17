@@ -74,8 +74,10 @@ def main() -> None:
     print("=" * 60)
     print("RingScope -- Synthetic Graph Generator & Statistics")
     print("=" * 60)
-    print(f"Configuration: N={args.nodes}, Cluster={args.cluster_size}, "
-          f"p_in={args.p_internal}, p_out={args.p_external}, seed={args.seed}")
+    print(
+        f"Configuration: N={args.nodes}, Cluster={args.cluster_size}, "
+        f"p_in={args.p_internal}, p_out={args.p_external}, seed={args.seed}"
+    )
     print("-" * 60)
 
     res = generate_planted_cluster_graph(
@@ -114,17 +116,20 @@ def main() -> None:
     if args.csv_out:
         out_path = Path(args.csv_out)
         import csv
+
         with open(out_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(["source", "target", "tx_count", "amount", "timestamp"])
             for u, v, data in tg.graph.edges(data=True):
-                writer.writerow([
-                    u,
-                    v,
-                    data.get("tx_count", 1),
-                    data.get("amount", 1.0),
-                    data.get("timestamp", 0.0),
-                ])
+                writer.writerow(
+                    [
+                        u,
+                        v,
+                        data.get("tx_count", 1),
+                        data.get("amount", 1.0),
+                        data.get("timestamp", 0.0),
+                    ]
+                )
         print("-" * 60)
         print(f"Exported edge-list to: {out_path}")
 
@@ -133,19 +138,25 @@ def main() -> None:
         print("DENSEST SUBGRAPH ALGORITHM COMPARISON:")
         # 1. Goldberg exact flow solver
         gb = goldberg_densest_subgraph(tg, tolerance=1e-4)
-        print(f"  * Goldberg Flow Density          : {gb.density:.4f} "
-              f"({gb.node_count} nodes, {gb.flow_computations} flows, {gb.runtime_sec*1000:.2f}ms)")
+        print(
+            f"  * Goldberg Flow Density          : {gb.density:.4f} "
+            f"({gb.node_count} nodes, {gb.flow_computations} flows, {gb.runtime_sec * 1000:.2f}ms)"
+        )
 
         # 2. Charikar Greedy Peeling (2-approx)
         gp = greedy_peeling(tg)
-        print(f"  * Charikar Greedy Peeling Density: {gp.density:.4f} "
-              f"({gp.node_count} nodes, {gp.runtime_sec*1000:.2f}ms)")
+        print(
+            f"  * Charikar Greedy Peeling Density: {gp.density:.4f} "
+            f"({gp.node_count} nodes, {gp.runtime_sec * 1000:.2f}ms)"
+        )
 
         # 3. Greedy++ (Iterative load-weighted peeling)
         gpp = greedy_plus_plus(tg, iterations=10)
-        print(f"  * Greedy++ (T=10) Density        : {gpp.density:.4f} "
-              f"({gpp.node_count} nodes, best iter {gpp.best_iteration}, "
-              f"{gpp.runtime_sec*1000:.2f}ms)")
+        print(
+            f"  * Greedy++ (T=10) Density        : {gpp.density:.4f} "
+            f"({gpp.node_count} nodes, best iter {gpp.best_iteration}, "
+            f"{gpp.runtime_sec * 1000:.2f}ms)"
+        )
 
         # 4. Brute Force Oracle (if small)
         print("  * Brute-force Reference Oracle   : ", end="")
@@ -155,8 +166,10 @@ def main() -> None:
             t_bf = time.perf_counter()
             bf = brute_force_densest_subgraph(tg, max_nodes=MAX_BRUTE_FORCE_NODES)
             elapsed_bf = (time.perf_counter() - t_bf) * 1000
-            print(f"{bf.density:.4f} ({bf.node_count} nodes, "
-                  f"{bf.subsets_evaluated} subsets, {elapsed_bf:.2f}ms)")
+            print(
+                f"{bf.density:.4f} ({bf.node_count} nodes, "
+                f"{bf.subsets_evaluated} subsets, {elapsed_bf:.2f}ms)"
+            )
 
     print("=" * 60)
 
