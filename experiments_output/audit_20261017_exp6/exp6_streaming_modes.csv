@@ -1,0 +1,4 @@
+mode,algorithm,total_batches,total_transactions,final_num_nodes,final_num_edges,final_density,exact_reference_density,density_gap,approx_ratio,precision,recall,f1,jaccard,total_runtime_ms,mean_batch_latency_ms,p95_batch_latency_ms,total_recomputations,recomputation_rate,timed_out
+full_recomputation,greedy_peeling,12,35,25,31,1.33333,1.41667,0.08333,0.9412,0.1667,0.6,0.2609,0.15,1.409,0.107,0.126,12,1.0,False
+warm_started_recomputation,greedy_peeling,12,35,25,31,1.33333,1.41667,0.08333,0.9412,0.1667,0.6,0.2609,0.15,1.482,0.114,0.187,12,1.0,False
+incremental_heuristic,greedy_peeling,12,35,25,31,1.3125,1.41667,0.10417,0.9265,0.1875,0.6,0.2857,0.1667,0.928,0.068,0.131,4,0.3333,False
