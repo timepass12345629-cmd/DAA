@@ -226,6 +226,7 @@ async def step_stream(req: StreamStepRequest) -> StreamStepResponse:
             stream_id=req.stream_id,
             transactions=req.transactions,
             num_synthetic_batches=req.num_synthetic_batches,
+            include_edges=req.include_edges,
         )
     except KeyError:
         raise HTTPException(
@@ -249,6 +250,7 @@ async def inject_ring(req: StreamInjectRingRequest) -> StreamStepResponse:
             ring_nodes=req.ring_nodes,
             amount=req.amount,
             complete_clique=req.complete_clique,
+            include_edges=req.include_edges,
         )
     except KeyError:
         raise HTTPException(

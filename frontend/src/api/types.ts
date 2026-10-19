@@ -176,12 +176,14 @@ export interface StreamStepSnapshot {
   recomputation_count: number
   mode: string
   recomputed_this_step: boolean
+  new_edges?: Array<{ source: string; target: string; amount?: number }>
 }
 
 export interface StreamStepRequest {
   stream_id: string
   transactions?: TransactionRecordIn[]
   num_synthetic_batches?: number
+  include_edges?: boolean
 }
 
 export interface StreamStepResponse {
@@ -192,6 +194,7 @@ export interface StreamStepResponse {
   total_transactions: number
   total_unique_edges: number
   recomputations_count: number
+  new_edges?: Array<{ source: string; target: string; amount?: number }>
 }
 
 export interface StreamInjectRingRequest {
@@ -200,6 +203,7 @@ export interface StreamInjectRingRequest {
   ring_nodes?: string[]
   amount?: number
   complete_clique?: boolean
+  include_edges?: boolean
 }
 
 export interface StreamStopResponse {

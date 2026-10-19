@@ -4,7 +4,8 @@ tests/test_mode_c_triggers.py — Regression and diagnostic tests for Mode C tri
 Evaluates:
 1. Disjoint dense cluster emerging outside the current candidate and its detection delay.
 2. High-degree external star hub with no connections to candidate.
-3. External node gaining connections to candidate members (density increase verified mathematically and algorithmically).
+3. External node gaining connections to candidate members (density increase verified
+   mathematically and algorithmically).
 4. Parallel transactions not incorrectly inflating unique-edge counts.
 """
 
@@ -118,12 +119,12 @@ def test_disjoint_dense_cluster_detection_delay():
     assert s_i3.candidate_density == pytest.approx(1.00)
 
     # Batch 4: Still below triggers
-    s_f4 = m_full.process_batch(b4)
+    m_full.process_batch(b4)
     s_i4 = m_inc.process_batch(b4)
     assert s_i4.recomputed_this_step is False
 
     # Batch 5: Periodic trigger fires! Mode C catches up and finds K4
-    s_f5 = m_full.process_batch(b5)
+    m_full.process_batch(b5)
     s_i5 = m_inc.process_batch(b5)
     assert s_i5.recomputed_this_step is True
     assert set(s_i5.candidate_nodes) == {"X1", "X2", "X3", "X4"}
@@ -236,7 +237,7 @@ def test_external_node_augmenting_candidate_density():
         external_degree_ratio=1.5,
         hub_trigger_type="global_degree",
     )
-    s0_g = m_global.process_batch(b0)
+    m_global.process_batch(b0)
     s1_g = m_global.process_batch(b1)
 
     # Math density check
@@ -266,7 +267,7 @@ def test_external_node_augmenting_candidate_density():
     assert s1_inc.recomputed_this_step is True
 
     # Check greedy peeling's returned candidate and density:
-    # Greedy peeling on this graph removes D (deg 2), leaving {A, B, C, W} with 5 edges (density 5/4 = 1.25)
+    # Greedy peeling removes D (deg 2), leaving {A, B, C, W} with 5 edges (density 5/4 = 1.25)
     # or keeps {A, B, C, D, W} with 7 edges (density 7/5 = 1.40).
     # Since 1.40 > 1.25, greedy peeling picks {A, B, C, D, W} with density 1.40!
     assert set(s1_inc.candidate_nodes) == {"A", "B", "C", "D", "W"}
@@ -302,7 +303,7 @@ def test_parallel_transactions_do_not_inflate_external_counter():
         external_degree_ratio=2.0,
     )
 
-    s0 = m_inc.process_batch(b0)
+    m_inc.process_batch(b0)
     assert m_inc._external_edges_since_recompute == 0
 
     s1 = m_inc.process_batch(b1)
@@ -364,14 +365,29 @@ def test_adversarial_disconnected_dense_cluster_delay_across_strategies():
         ("K0", "K4"), ("K1", "K2"), ("K1", "K3"),
         ("K1", "K4"), ("K2", "K3"), ("K2", "K4"), ("K3", "K4"),
     ]
-    b1 = StreamBatch(1, [TransactionRecord(u, v, 10.0, 2.0, f"k5_{i}") for i, (u, v) in enumerate(k5_edges[:3])])
-    b2 = StreamBatch(2, [TransactionRecord(u, v, 10.0, 3.0, f"k5_{i}") for i, (u, v) in enumerate(k5_edges[3:6], 3)])
-    b3 = StreamBatch(3, [TransactionRecord(u, v, 10.0, 4.0, f"k5_{i}") for i, (u, v) in enumerate(k5_edges[6:10], 6)])
+    b1 = StreamBatch(
+        1,
+        [TransactionRecord(u, v, 10.0, 2.0, f"k5_{i}") for i, (u, v) in enumerate(k5_edges[:3])],
+    )
+    b2 = StreamBatch(
+        2,
+        [
+            TransactionRecord(u, v, 10.0, 3.0, f"k5_{i}")
+            for i, (u, v) in enumerate(k5_edges[3:6], 3)
+        ],
+    )
+    b3 = StreamBatch(
+        3,
+        [
+            TransactionRecord(u, v, 10.0, 4.0, f"k5_{i}")
+            for i, (u, v) in enumerate(k5_edges[6:10], 6)
+        ],
+    )
     b4 = StreamBatch(4, [TransactionRecord("Z1", "Z2", 10.0, 5.0, "z1")])
     b5 = StreamBatch(5, [TransactionRecord("Z2", "Z3", 10.0, 6.0, "z2")])
     b6 = StreamBatch(6, [TransactionRecord("Z3", "Z4", 10.0, 7.0, "z3")])
     b7 = StreamBatch(7, [TransactionRecord("Z4", "Z5", 10.0, 8.0, "z4")])
-    b8 = StreamBatch(8, [TransactionRecord("Z5", "Z1", 10.0, 9.0, "z5")])  # Periodic boundary if interval=8
+    b8 = StreamBatch(8, [TransactionRecord("Z5", "Z1", 10.0, 9.0, "z5")])
 
     stream = [b0, b1, b2, b3, b4, b5, b6, b7, b8]
 
@@ -439,7 +455,7 @@ async def test_api_stream_start_hub_trigger_passthrough():
     service = BackendService()
 
     # 1. Default (no config provided) -> should be 'global_degree'
-    res_default = service.start_stream(
+    service.start_stream(
         stream_id="stream_test_default",
         mode="incremental_heuristic",
         algorithm="greedy_peeling",
@@ -451,7 +467,7 @@ async def test_api_stream_start_hub_trigger_passthrough():
     assert session_default.maintainer.hub_trigger_type == "global_degree"
 
     # 2. Explicit 'candidate_incident' passed in config
-    res_cand = service.start_stream(
+    service.start_stream(
         stream_id="stream_test_cand",
         mode="incremental_heuristic",
         algorithm="greedy_peeling",
@@ -463,7 +479,7 @@ async def test_api_stream_start_hub_trigger_passthrough():
     assert session_cand.maintainer.hub_trigger_type == "candidate_incident"
 
     # 3. Explicit 'hybrid' passed in config
-    res_hyb = service.start_stream(
+    service.start_stream(
         stream_id="stream_test_hyb",
         mode="incremental_heuristic",
         algorithm="greedy_peeling",

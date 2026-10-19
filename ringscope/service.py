@@ -117,7 +117,9 @@ class StreamSession:
             current_density=round(self.maintainer.current_density, 5),
         )
 
-    def process_custom_transactions(self, txs: list[TransactionRecordIn]) -> StreamStepResponse:
+    def process_custom_transactions(
+        self, txs: list[TransactionRecordIn], include_edges: bool = False
+    ) -> StreamStepResponse:
         self.step_counter += 1
         self.total_transactions += len(txs)
         records = [
@@ -133,6 +135,13 @@ class StreamSession:
         batch = StreamBatch(batch_index=self.step_counter, transactions=records)
         snap = self.maintainer.process_batch(batch)
         snap_dict = snap.to_dict()
+        all_edges = (
+            [{"source": tx.src, "target": tx.dst, "amount": tx.amount} for tx in records]
+            if include_edges
+            else None
+        )
+        if include_edges:
+            snap_dict["new_edges"] = all_edges
         self.snapshots_history.append(snap_dict)
 
         return StreamStepResponse(
@@ -143,10 +152,14 @@ class StreamSession:
             total_transactions=self.total_transactions,
             total_unique_edges=self.maintainer.graph.num_unique_edges,
             recomputations_count=self.maintainer.recomputation_count,
+            new_edges=all_edges,
         )
 
-    def process_synthetic_batches(self, num_batches: int) -> StreamStepResponse:
+    def process_synthetic_batches(
+        self, num_batches: int, include_edges: bool = False
+    ) -> StreamStepResponse:
         produced_snaps = []
+        all_step_edges = [] if include_edges else None
         for _ in range(num_batches):
             self.step_counter += 1
             self.total_transactions += self.batch_size
@@ -169,6 +182,13 @@ class StreamSession:
             batch = StreamBatch(batch_index=self.step_counter, transactions=records)
             snap = self.maintainer.process_batch(batch)
             snap_dict = snap.to_dict()
+            if include_edges:
+                batch_edges = [
+                    {"source": tx.src, "target": tx.dst, "amount": tx.amount}
+                    for tx in records
+                ]
+                snap_dict["new_edges"] = batch_edges
+                all_step_edges.extend(batch_edges)
             self.snapshots_history.append(snap_dict)
             produced_snaps.append(snap_dict)
 
@@ -180,6 +200,7 @@ class StreamSession:
             total_transactions=self.total_transactions,
             total_unique_edges=self.maintainer.graph.num_unique_edges,
             recomputations_count=self.maintainer.recomputation_count,
+            new_edges=all_step_edges,
         )
 
     def inject_ring(
@@ -188,6 +209,7 @@ class StreamSession:
         ring_nodes: Optional[list[str]] = None,
         amount: float = 100.0,
         complete_clique: bool = False,
+        include_edges: bool = False,
     ) -> StreamStepResponse:
         self.step_counter += 1
         nodes = ring_nodes or [f"RING_{self.stream_id[-4:]}_{i}" for i in range(ring_size)]
@@ -229,6 +251,13 @@ class StreamSession:
         )
         snap = self.maintainer.process_batch(batch)
         snap_dict = snap.to_dict()
+        ring_edges = (
+            [{"source": tx.src, "target": tx.dst, "amount": tx.amount} for tx in records]
+            if include_edges
+            else None
+        )
+        if include_edges:
+            snap_dict["new_edges"] = ring_edges
         self.snapshots_history.append(snap_dict)
 
         return StreamStepResponse(
@@ -239,6 +268,7 @@ class StreamSession:
             total_transactions=self.total_transactions,
             total_unique_edges=self.maintainer.graph.num_unique_edges,
             recomputations_count=self.maintainer.recomputation_count,
+            new_edges=ring_edges,
         )
 
     def stop(self) -> StreamStopResponse:
@@ -607,6 +637,7 @@ class BackendService:
         stream_id: str,
         transactions: Optional[list[TransactionRecordIn]],
         num_synthetic_batches: int,
+        include_edges: bool = False,
     ) -> StreamStepResponse:
         session = self.streams.get(stream_id)
         if not session:
@@ -615,8 +646,12 @@ class BackendService:
             raise ValueError(f"Stream '{stream_id}' is not active ({session.status})")
 
         if transactions:
-            return await asyncio.to_thread(session.process_custom_transactions, transactions)
-        return await asyncio.to_thread(session.process_synthetic_batches, num_synthetic_batches)
+            return await asyncio.to_thread(
+                session.process_custom_transactions, transactions, include_edges
+            )
+        return await asyncio.to_thread(
+            session.process_synthetic_batches, num_synthetic_batches, include_edges
+        )
 
     async def inject_ring_stream(
         self,
@@ -625,6 +660,7 @@ class BackendService:
         ring_nodes: Optional[list[str]],
         amount: float,
         complete_clique: bool,
+        include_edges: bool = False,
     ) -> StreamStepResponse:
         session = self.streams.get(stream_id)
         if not session:
@@ -638,6 +674,7 @@ class BackendService:
             ring_nodes,
             amount,
             complete_clique,
+            include_edges,
         )
 
     def stop_stream(self, stream_id: str) -> StreamStopResponse:

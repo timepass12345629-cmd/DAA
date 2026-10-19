@@ -428,7 +428,9 @@ class IncrementalHeuristicMaintainer(BaseStreamMaintainer):
         recompute_interval: int = 5,
         external_edge_threshold: int = 10,
         external_degree_ratio: float = 1.5,
-        hub_trigger_type: Literal["global_degree", "candidate_incident", "hybrid"] = "global_degree",
+        hub_trigger_type: Literal[
+            "global_degree", "candidate_incident", "hybrid"
+        ] = "global_degree",
     ) -> None:
         valid_triggers = ("global_degree", "candidate_incident", "hybrid")
         if hub_trigger_type not in valid_triggers:

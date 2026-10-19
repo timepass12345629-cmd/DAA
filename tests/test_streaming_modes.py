@@ -246,3 +246,59 @@ def test_mode_c_disjoint_cluster_recovery_on_trigger():
     assert snap_k4.recomputed_this_step is True
     assert snap_k4.candidate_density == pytest.approx(1.5)
     assert set(snap_k4.candidate_nodes) == {"D1", "D2", "D3", "D4"}
+
+
+def test_streaming_session_include_edges_opt_in():
+    """Verify that include_edges defaults to None/False, and opt-in returns exact generated edges."""
+    from ringscope.service import StreamSession
+    from ringscope.models_v1 import TransactionRecordIn
+
+    session = StreamSession(
+        stream_id="test_stream_opt_in",
+        mode="warm_started_recomputation",
+        algorithm="greedy_peeling",
+        batch_size=4,
+    )
+
+    # 1. Default: include_edges=False -> new_edges is None
+    res_default = session.process_synthetic_batches(num_batches=1, include_edges=False)
+    assert res_default.new_edges is None
+    assert "new_edges" not in res_default.snapshots[0]
+
+    # 2. Opt-in: include_edges=True -> new_edges returned with exact 4 transactions
+    res_opt_in = session.process_synthetic_batches(num_batches=1, include_edges=True)
+    assert res_opt_in.new_edges is not None
+    assert len(res_opt_in.new_edges) == 4
+    for edge in res_opt_in.new_edges:
+        assert "source" in edge
+        assert "target" in edge
+        assert edge["source"].startswith("ACC_")
+        assert edge["target"].startswith("ACC_")
+    assert "new_edges" in res_opt_in.snapshots[0]
+    assert len(res_opt_in.snapshots[0]["new_edges"]) == 4
+
+    # 3. Custom transactions with include_edges=True
+    custom_txs = [
+        TransactionRecordIn(source="USER_X", target="USER_Y", amount=250.0),
+        TransactionRecordIn(source="USER_Y", target="USER_Z", amount=150.0),
+    ]
+    res_custom = session.process_custom_transactions(custom_txs, include_edges=True)
+    assert res_custom.new_edges is not None
+    assert len(res_custom.new_edges) == 2
+    assert res_custom.new_edges[0]["source"] == "USER_X"
+    assert res_custom.new_edges[0]["target"] == "USER_Y"
+    assert res_custom.new_edges[0]["amount"] == 250.0
+
+    # 4. Ring injection with include_edges=True
+    res_ring = session.inject_ring(
+        ring_size=4,
+        ring_nodes=["R0", "R1", "R2", "R3"],
+        amount=50.0,
+        complete_clique=False,
+        include_edges=True,
+    )
+    assert res_ring.new_edges is not None
+    assert len(res_ring.new_edges) == 4
+    assert res_ring.new_edges[0] == {"source": "R0", "target": "R1", "amount": 50.0}
+    assert res_ring.new_edges[3] == {"source": "R3", "target": "R0", "amount": 50.0}
+

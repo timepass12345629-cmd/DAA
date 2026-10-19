@@ -1,3 +1,0 @@
-experiment,num_nodes,num_edges,optimal_density,goldberg_density,goldberg_gap,greedy_density,greedy_approx_ratio,greedy_plus_plus_density,greedy_plus_plus_approx_ratio
-exact_vs_approx_density,8,14,1.85714,1.85714,0.0,1.85714,1.0,1.85714,1.0
-exact_vs_approx_density,12,29,2.41667,2.41667,0.0,2.41667,1.0,2.41667,1.0

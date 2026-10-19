@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
-  Activity,
   Layers,
-  Cpu,
   Radio,
   FlaskConical,
-  BookOpen,
   AlertCircle,
   X,
   Server,
@@ -28,54 +25,32 @@ import {
   ExperimentJobResponse,
 } from './api/types'
 
-import { OverviewScreen } from './screens/OverviewScreen'
-import { GraphExplorerScreen } from './screens/GraphExplorerScreen'
-import { AlgorithmLabScreen } from './screens/AlgorithmLabScreen'
-import { StreamingSimulatorScreen } from './screens/StreamingSimulatorScreen'
-import { ExperimentsScreen } from './screens/ExperimentsScreen'
-import { DocumentationScreen } from './screens/DocumentationScreen'
+import { InvestigatorScreen } from './screens/InvestigatorScreen'
+import { StreamingSimulatorScreen, ComparisonEntry } from './screens/StreamingSimulatorScreen'
+import { ResearchScreen } from './screens/ResearchScreen'
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<
-    'overview' | 'explorer' | 'algorithms' | 'streaming' | 'experiments' | 'docs'
-  >('overview')
+  const [activeTab, setActiveTab] = useState<'investigator' | 'streaming' | 'research'>('investigator')
 
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [graph, setGraph] = useState<GraphResponse | null>(null)
   const [analysis, setAnalysis] = useState<AnalysisJobResponse | null>(null)
   const [stream, setStream] = useState<StreamSessionResponse | null>(null)
   const [streamSnapshots, setStreamSnapshots] = useState<StreamStepSnapshot[]>([])
+  const [streamComparisons, setStreamComparisons] = useState<ComparisonEntry[]>([])
   const [candidateNodes, setCandidateNodes] = useState<string[]>([])
+  const [datasetName, setDatasetName] = useState<string | null>(null)
 
   const [loading, setLoading] = useState<boolean>(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  // Fetch initial system status and generate benchmark graph
+  // Fetch initial system status
   const initSystem = useCallback(async () => {
     setLoading(true)
     setErrorMsg(null)
     try {
-      // 1. Health probe
       const h = await api.getHealth()
       setHealth(h)
-
-      // 2. Initial synthetic benchmark graph
-      const g = await api.generateGraph({
-        generator_type: 'planted_cluster',
-        num_nodes: 30,
-        cluster_size: 8,
-        p_internal: 0.85,
-        p_external: 0.05,
-        seed: 42,
-      })
-
-      // Fetch elements for graph visualization
-      const detailed = await api.getGraph(g.graph_id, true)
-      setGraph(detailed)
-
-      if (detailed.planted_cluster?.nodes) {
-        setCandidateNodes(detailed.planted_cluster.nodes)
-      }
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to initialize RingScope system')
     } finally {
@@ -85,6 +60,15 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     initSystem()
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const tab = params.get('tab')
+      if (tab === 'streaming' || tab === 'research') {
+        setActiveTab(tab)
+      }
+    } catch {
+      // Ignore URL parsing errors
+    }
   }, [initSystem])
 
   // Periodic health ping
@@ -101,7 +85,7 @@ export const App: React.FC = () => {
   }, [])
 
   // Graph operations
-  const handleGenerateGraph = async (req: GraphGenerateRequest) => {
+  const handleGenerateGraph = async (req: GraphGenerateRequest, label?: string): Promise<GraphResponse | null> => {
     setLoading(true)
     setErrorMsg(null)
     try {
@@ -109,19 +93,25 @@ export const App: React.FC = () => {
       const detailed = await api.getGraph(g.graph_id, true)
       setGraph(detailed)
       setAnalysis(null)
-      if (detailed.planted_cluster?.nodes) {
-        setCandidateNodes(detailed.planted_cluster.nodes)
-      } else {
-        setCandidateNodes([])
-      }
+      setCandidateNodes([]) // Only populated when user clicks Detect Groups
+      setDatasetName(
+        label ||
+          (req.generator_type === 'planted_cluster'
+            ? 'Planted Dense Group (30 accounts)'
+            : req.generator_type === 'ring'
+            ? 'Circular Ring Network (25 accounts)'
+            : 'Sparse Baseline Network (30 accounts)')
+      )
+      return detailed
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to generate graph')
+      return null
     } finally {
       setLoading(false)
     }
   }
 
-  const handleImportGraph = async (req: GraphImportRequest) => {
+  const handleImportGraph = async (req: GraphImportRequest, label?: string) => {
     setLoading(true)
     setErrorMsg(null)
     try {
@@ -130,11 +120,19 @@ export const App: React.FC = () => {
       setGraph(detailed)
       setAnalysis(null)
       setCandidateNodes([])
+      setDatasetName(label || 'Imported Transaction Network')
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to import graph')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleClearGraph = () => {
+    setGraph(null)
+    setAnalysis(null)
+    setCandidateNodes([])
+    setDatasetName(null)
   }
 
   // Algorithm operations
@@ -145,10 +143,19 @@ export const App: React.FC = () => {
       const job = await api.runAnalysis(req)
       setAnalysis(job)
 
-      // Extract candidate cluster
+      // Extract candidate cluster or detected rings
       const ds = job.results?.densest_subgraph
-      const cand = ds?.goldberg?.nodes || ds?.greedy_peeling?.nodes || ds?.greedy_plus_plus?.nodes || []
-      setCandidateNodes(cand)
+      const cand = ds?.goldberg?.nodes || ds?.greedy_peeling?.nodes || ds?.greedy_plus_plus?.nodes
+      if (cand && cand.length > 0) {
+        setCandidateNodes(cand)
+      } else if (job.results?.cycle_detection?.rings?.length) {
+        // If cycle detection was run, aggregate ring accounts as candidates
+        const ringNodes = new Set<string>()
+        for (const r of job.results.cycle_detection.rings) {
+          for (const n of r.nodes) ringNodes.add(n)
+        }
+        setCandidateNodes(Array.from(ringNodes))
+      }
     } catch (err: any) {
       setErrorMsg(err.message || 'Analysis run failed')
     } finally {
@@ -157,13 +164,13 @@ export const App: React.FC = () => {
   }
 
   // Streaming operations
-  const handleStartStream = async (req: StreamStartRequest) => {
+  const handleStartStream = async (req: StreamStartRequest, overrideGraphId?: string) => {
     setLoading(true)
     setErrorMsg(null)
     try {
       const sess = await api.startStream({
         ...req,
-        initial_graph_id: graph?.graph_id,
+        initial_graph_id: overrideGraphId ?? graph?.graph_id,
       })
       setStream(sess)
       setStreamSnapshots([])
@@ -175,7 +182,7 @@ export const App: React.FC = () => {
     }
   }
 
-  const handleStepStream = async (req: StreamStepRequest) => {
+  const handleStepStream = async (req: StreamStepRequest): Promise<StreamStepResponse> => {
     setLoading(true)
     setErrorMsg(null)
     try {
@@ -193,20 +200,16 @@ export const App: React.FC = () => {
           recomputations_count: stepRes.recomputations_count,
         })
       }
-
-      // Refresh graph topology
-      if (graph) {
-        const refreshed = await api.getGraph(graph.graph_id, true)
-        setGraph(refreshed)
-      }
+      return stepRes
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to advance stream')
+      throw err
     } finally {
       setLoading(false)
     }
   }
 
-  const handleInjectRing = async (req: StreamInjectRingRequest) => {
+  const handleInjectRing = async (req: StreamInjectRingRequest): Promise<StreamStepResponse> => {
     setLoading(true)
     setErrorMsg(null)
     try {
@@ -223,14 +226,10 @@ export const App: React.FC = () => {
           recomputations_count: stepRes.recomputations_count,
         })
       }
-
-      // Refresh graph topology
-      if (graph) {
-        const refreshed = await api.getGraph(graph.graph_id, true)
-        setGraph(refreshed)
-      }
+      return stepRes
     } catch (err: any) {
       setErrorMsg(err.message || 'Ring injection failed')
+      throw err
     } finally {
       setLoading(false)
     }
@@ -258,116 +257,79 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-navy-950 text-slate-200 flex flex-col font-sans">
+    <div className="min-h-screen bg-page text-slate-800 flex flex-col font-sans">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-50 bg-navy-900/95 backdrop-blur-md border-b border-navy-700/80 px-4 py-2.5 flex items-center justify-between shadow-lg">
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-border px-4 py-2.5 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-6">
           {/* Brand Logo */}
-          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => setActiveTab('overview')}>
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cluster-node to-navy-950 border border-red-500/50 flex items-center justify-center shadow-[0_0_12px_rgba(239,68,68,0.35)]">
-              <span className="font-mono font-black text-sm text-white">RS</span>
+          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => setActiveTab('investigator')}>
+            <div className="w-8 h-8 rounded-lg bg-forest text-white flex items-center justify-center shadow-xs">
+              <span className="font-mono font-black text-sm">RS</span>
             </div>
             <div>
-              <h1 className="text-sm font-bold text-slate-100 tracking-wide flex items-center gap-1.5">
+              <h1 className="text-sm font-bold text-slate-900 tracking-wide flex items-center gap-1.5">
                 <span>RingScope</span>
-                <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-navy-800 text-accent-blue border border-navy-600">
-                  Research
+                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-forest-50 text-forest border border-forest-200">
+                  Enterprise Analytics
                 </span>
               </h1>
-              <p className="text-[10px] text-slate-400 font-mono -mt-0.5">Transaction Graph Analyzer</p>
+              <p className="text-[10px] text-slate-500 font-mono -mt-0.5">Transaction Network Investigator</p>
             </div>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1 text-xs">
+          {/* Primary Navigation: Only Investigator and Streaming Lab */}
+          <nav className="hidden md:flex items-center gap-1.5 text-xs">
             <button
-              onClick={() => setActiveTab('overview')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition ${
-                activeTab === 'overview'
-                  ? 'bg-navy-800 text-white border border-navy-600'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-navy-850'
+              onClick={() => setActiveTab('investigator')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition ${
+                activeTab === 'investigator'
+                  ? 'bg-forest text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
-              <Activity className="w-3.5 h-3.5 text-accent-blue" />
-              <span>Overview</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('explorer')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition ${
-                activeTab === 'explorer'
-                  ? 'bg-navy-800 text-white border border-navy-600'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-navy-850'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5 text-accent-emerald" />
-              <span>Graph Explorer</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('algorithms')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition ${
-                activeTab === 'algorithms'
-                  ? 'bg-navy-800 text-white border border-navy-600'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-navy-850'
-              }`}
-            >
-              <Cpu className="w-3.5 h-3.5 text-cluster-node" />
-              <span>Algorithm Lab</span>
+              <Layers className={`w-3.5 h-3.5 ${activeTab === 'investigator' ? 'text-white' : 'text-slate-500'}`} />
+              <span>Investigator</span>
             </button>
 
             <button
               onClick={() => setActiveTab('streaming')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition ${
                 activeTab === 'streaming'
-                  ? 'bg-navy-800 text-white border border-navy-600'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-navy-850'
+                  ? 'bg-forest text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
-              <Radio className="w-3.5 h-3.5 text-accent-amber" />
-              <span>Streaming</span>
+              <Radio className={`w-3.5 h-3.5 ${activeTab === 'streaming' ? 'text-white' : 'text-slate-500'}`} />
+              <span>Streaming Lab</span>
             </button>
 
-            <button
-              onClick={() => setActiveTab('experiments')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition ${
-                activeTab === 'experiments'
-                  ? 'bg-navy-800 text-white border border-navy-600'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-navy-850'
-              }`}
-            >
-              <FlaskConical className="w-3.5 h-3.5 text-purple-400" />
-              <span>Experiments</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('docs')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition ${
-                activeTab === 'docs'
-                  ? 'bg-navy-800 text-white border border-navy-600'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-navy-850'
-              }`}
-            >
-              <BookOpen className="w-3.5 h-3.5 text-slate-400" />
-              <span>Docs</span>
-            </button>
+            {/* Subtle dev badge if loaded with ?tab=research */}
+            {activeTab === 'research' && (
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs bg-slate-100 text-slate-700 border border-border">
+                <FlaskConical className="w-3 h-3 text-interactive" />
+                <span>Research Mode</span>
+              </span>
+            )}
           </nav>
         </div>
 
         {/* Right Status & Controls */}
         <div className="flex items-center gap-3 text-xs">
           {/* Active Backend Indicator */}
-          <div className="flex items-center gap-1.5 bg-navy-800/80 px-2.5 py-1 rounded-lg border border-navy-700 font-mono text-[11px]">
-            <Server className="w-3 h-3 text-emerald-400" />
-            <span className="text-slate-300">127.0.0.1:8000</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-border font-mono text-[11px]">
+            <Server className="w-3 h-3 text-forest" />
+            <span className="text-slate-700">127.0.0.1:8000</span>
+            {health?.version && (
+              <span className="text-slate-400 text-[10px]">v{health.version}</span>
+            )}
+            <span className="w-1.5 h-1.5 rounded-full bg-forest animate-pulse" />
           </div>
 
           <button
             onClick={initSystem}
             disabled={loading}
             title="Refresh System State"
-            className="p-1.5 rounded-lg bg-navy-800 text-slate-400 hover:text-white border border-navy-700 transition"
+            className="p-1.5 rounded-lg bg-slate-50 text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-border transition"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -376,76 +338,43 @@ export const App: React.FC = () => {
 
       {/* Dismissible Error Banner */}
       {errorMsg && (
-        <div className="bg-red-950/90 border-b border-red-800 px-4 py-2.5 text-xs text-red-200 flex items-center justify-between shadow-md">
+        <div className="bg-critical-50 border-b border-critical-200 px-4 py-2 text-xs text-critical-900 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-400" />
+            <AlertCircle className="w-4 h-4 text-critical" />
             <span className="font-semibold">Error:</span>
             <span>{errorMsg}</span>
           </div>
-          <button onClick={() => setErrorMsg(null)} className="text-red-400 hover:text-white">
+          <button onClick={() => setErrorMsg(null)} className="text-critical-600 hover:text-critical-900">
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
-        {activeTab === 'overview' && (
-          <OverviewScreen
+      <main className="flex-1 w-full mx-auto p-4 sm:p-5">
+        {activeTab === 'investigator' && (
+          <InvestigatorScreen
             graph={graph}
-            health={health}
+            datasetName={datasetName}
+            candidateNodes={candidateNodes}
             analysis={analysis}
-            stream={stream}
-            onNavigate={(screen) => setActiveTab(screen as any)}
-            onQuickGenerate={() =>
-              handleGenerateGraph({
-                generator_type: 'planted_cluster',
-                num_nodes: 30,
-                cluster_size: 8,
-                p_internal: 0.85,
-                p_external: 0.05,
-                seed: 42,
-              })
-            }
-            onQuickAnalyze={() =>
-              graph &&
-              handleRunAnalysis({
-                graph_id: graph.graph_id,
-                analysis_type: 'densest_subgraph',
-                algorithm: 'goldberg',
-              })
-            }
-            candidateNodes={candidateNodes}
-          />
-        )}
-
-        {activeTab === 'explorer' && (
-          <GraphExplorerScreen
-            graph={graph}
-            candidateNodes={candidateNodes}
+            loading={loading}
             onGenerate={handleGenerateGraph}
             onImport={handleImportGraph}
-            loading={loading}
-          />
-        )}
-
-        {activeTab === 'algorithms' && (
-          <AlgorithmLabScreen
-            graph={graph}
-            analysis={analysis}
+            onClearGraph={handleClearGraph}
             onRunAnalysis={handleRunAnalysis}
-            loading={loading}
-            onSelectCandidateCluster={(nodes) => {
-              setCandidateNodes(nodes)
-              setActiveTab('explorer')
-            }}
           />
         )}
 
         {activeTab === 'streaming' && (
           <StreamingSimulatorScreen
+            graph={graph}
+            datasetName={datasetName}
             stream={stream}
             snapshots={streamSnapshots}
+            comparisons={streamComparisons}
+            onAddComparison={(entry) => setStreamComparisons((prev) => [...prev, entry])}
+            onClearComparisons={() => setStreamComparisons([])}
             onStartStream={handleStartStream}
             onStepStream={handleStepStream}
             onInjectRing={handleInjectRing}
@@ -453,24 +382,24 @@ export const App: React.FC = () => {
             loading={loading}
             onSelectCluster={(nodes) => {
               setCandidateNodes(nodes)
-              setActiveTab('explorer')
+              setActiveTab('investigator')
             }}
+            onGenerate={handleGenerateGraph}
+            onNavigateToInvestigator={() => setActiveTab('investigator')}
           />
         )}
 
-        {activeTab === 'experiments' && (
-          <ExperimentsScreen
+        {activeTab === 'research' && (
+          <ResearchScreen
             onRunExperiment={handleRunExperiment}
             loading={loading}
           />
         )}
-
-        {activeTab === 'docs' && <DocumentationScreen />}
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-navy-800/80 px-4 py-3 text-center text-slate-500 text-xs font-mono">
-        RingScope Graph Analytics • Discrete Algorithmic Analysis (DAA) Research Platform • 2026
+      <footer className="border-t border-border bg-white px-4 py-2.5 text-center text-slate-500 text-xs font-mono">
+        RingScope Network Investigator • Enterprise Financial Analytics • White / Forest Green / Orange / Blue
       </footer>
     </div>
   )

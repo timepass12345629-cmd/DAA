@@ -222,6 +222,10 @@ class StreamStepRequest(BaseModel):
         le=50,
         description="Number of deterministic synthetic batches to ingest if no transactions given",
     )
+    include_edges: bool = Field(
+        default=False,
+        description="If True, returns the generated/ingested (source, target) edge records in the step response",
+    )
 
 
 class StreamStepResponse(BaseModel):
@@ -232,6 +236,10 @@ class StreamStepResponse(BaseModel):
     total_transactions: int
     total_unique_edges: int
     recomputations_count: int
+    new_edges: Optional[list[dict[str, Any]]] = Field(
+        default=None,
+        description="Newly generated or ingested edges with source and target, when include_edges is True",
+    )
 
 
 class StreamInjectRingRequest(BaseModel):
@@ -254,6 +262,10 @@ class StreamInjectRingRequest(BaseModel):
     complete_clique: bool = Field(
         default=False,
         description="If True, injects an entire clique K_k rather than a simple cycle C_k",
+    )
+    include_edges: bool = Field(
+        default=False,
+        description="If True, returns the generated/injected (source, target) edge records in the step response",
     )
 
 

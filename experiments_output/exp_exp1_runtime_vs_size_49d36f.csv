@@ -1,3 +1,0 @@
-experiment,num_nodes,num_edges,greedy_peeling_ms,greedy_peeling_density,greedy_plus_plus_ms,greedy_plus_plus_density,goldberg_ms,goldberg_density
-runtime_vs_graph_size,8,3,0.107,0.75,0.364,0.75,5.381,0.75
-runtime_vs_graph_size,12,10,0.245,0.8889,0.566,0.9,13.491,0.9
